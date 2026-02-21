@@ -1,4 +1,5 @@
-import AsyncStorage from "@react-native-async-storage/async-storage";
+import { getAuth } from "@react-native-firebase/auth";
+import { AuthStateType, User } from "@types";
 import { SplashScreen, useRouter } from "expo-router";
 import React, {
   createContext,
@@ -8,23 +9,9 @@ import React, {
   useState,
 } from "react";
 
-type User = {
-  id: string;
-  name: string;
-  email: string;
-};
-type AuthStateType = {
-  isLoggedIn: boolean;
-  isReady: boolean;
-  login: () => void;
-  logout: () => void;
-};
-
 SplashScreen.preventAutoHideAsync();
 
-const authKey = "auth-key";
-
-const AuthContext = createContext<AuthState>({
+const AuthContext = createContext<AuthStateType>({
   isLoggedIn: false,
   isReady: false,
   login: () => {},
@@ -37,42 +24,38 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isReady, setIsReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const storeAuthState = async (newState: { isLoggedIn: boolean }) => {
-    try {
-      const jsonValue = JSON.stringify(newState);
-      await AsyncStorage.setItem(authKey, jsonValue);
-    } catch (error) {
-      console.log(error);
-    }
-  };
-
   const login = async () => {
-    await storeAuthState({ isLoggedIn: true });
-    setIsLoggedIn(true);
+    // TODO: Replace with actual Firebase authentication (e.g., signInWithEmailAndPassword)
+    // For now, this is a placeholder - you'll need to implement actual login logic
     router.replace("/");
   };
 
   const logout = async () => {
-    setIsLoggedIn(false);
-    await storeAuthState({ isLoggedIn: false });
-    router.replace("/login");
+    try {
+      await getAuth().signOut();
+      router.replace("/login");
+    } catch (error) {
+      console.error("Logout error:", error);
+    }
   };
 
   useEffect(() => {
-    const getAuthFromStorage = async () => {
-      await new Promise((res) => setTimeout(() => res(null), 2000));
-      try {
-        const value = await AsyncStorage.getItem(authKey);
-        if (value) {
-          const auth = JSON.parse(value);
-          setIsLoggedIn(auth.isLoggedIn);
-        }
-      } catch (error) {
-        console.log("something went wrong");
+    const unsubscribe = getAuth().onAuthStateChanged((user) => {
+      if (user) {
+        setIsLoggedIn(true);
+        setUser({
+          id: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+        });
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
       }
       setIsReady(true);
-    };
-    getAuthFromStorage();
+    });
+
+    return unsubscribe;
   }, []);
 
   useEffect(() => {
