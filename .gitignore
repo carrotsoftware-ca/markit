@@ -41,3 +41,7 @@ app-example
 # generated native folders
 /ios
 /android
+
+# Firebase config files (keep local, do not commit)
+src/services/firebase/GoogleService-Info.plist
+src/services/firebase/google-services.json
