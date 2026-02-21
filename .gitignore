@@ -2,7 +2,7 @@
 
 # dependencies
 node_modules/
-
+/src/services/firebase/GoogleService-Info.plist
 # Expo
 .expo/
 dist/
