@@ -1,4 +1,5 @@
-import { getAuth } from "@react-native-firebase/auth";
+// Temporary development mode - disable Firebase for Expo Go
+// import { getAuth } from "@react-native-firebase/auth";
 import { AuthStateType, User } from "@types";
 import { SplashScreen, useRouter } from "expo-router";
 import React, {
@@ -32,7 +33,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
   const logout = async () => {
     try {
-      await getAuth().signOut();
+      // await getAuth().signOut(); // Disabled for Expo Go development
+      setIsLoggedIn(false);
+      setUser(null);
       router.replace("/login");
     } catch (error) {
       console.error("Logout error:", error);
@@ -40,22 +43,31 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    const unsubscribe = getAuth().onAuthStateChanged((user) => {
-      if (user) {
-        setIsLoggedIn(true);
-        setUser({
-          id: user.uid,
-          displayName: user.displayName,
-          email: user.email,
-        });
-      } else {
-        setIsLoggedIn(false);
-        setUser(null);
-      }
-      setIsReady(true);
-    });
+    // Temporary development mode - simulate auth state
+    // const unsubscribe = getAuth().onAuthStateChanged((user) => {
+    //   if (user) {
+    //     setIsLoggedIn(true);
+    //     setUser({
+    //       id: user.uid,
+    //       displayName: user.displayName,
+    //       email: user.email,
+    //     });
+    //   } else {
+    //     setIsLoggedIn(false);
+    //     setUser(null);
+    //   }
+    //   setIsReady(true);
+    // });
 
-    return unsubscribe;
+    // Simulate logged out state for development
+    setTimeout(() => {
+      setIsLoggedIn(false);
+      setUser(null);
+      setIsReady(true);
+      SplashScreen.hideAsync();
+    }, 1000);
+
+    // return unsubscribe;
   }, []);
 
   useEffect(() => {

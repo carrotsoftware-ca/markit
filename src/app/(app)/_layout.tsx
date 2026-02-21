@@ -1,22 +1,23 @@
-import { Redirect, Tabs } from "expo-router";
 import { useAuth } from "@/src/context/AuthContext";
 import { Ionicons } from "@expo/vector-icons";
+import { Redirect, Tabs } from "expo-router";
+import { Text } from "react-native";
 
 export default function Layout() {
   const { isReady, isLoggedIn, isLoading } = useAuth();
 
   if (isLoading) {
-    return <Text>Loading...</Text>; 
+    return <Text>Loading...</Text>;
   }
-  if(!isReady) return null;
-  
+  if (!isReady) return null;
+
   if (!isLoggedIn) {
     return <Redirect href="/login" />;
   }
   return (
     <Tabs
       screenOptions={{
-        animation:'none',
+        animation: "none",
         headerShown: false,
       }}
     >
