@@ -1,10 +1,9 @@
-import { useAuth } from "@/src/context/AuthContext";
 import { useTheme } from "@/src/context/ThemeContext";
+import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function Profile() {
-  const { user, logout } = useAuth();
+export default function ProjectsScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -26,7 +25,7 @@ export default function Profile() {
           },
         ]}
       >
-        {user?.displayName}
+        Projects
       </Text>
       <Text
         style={[
@@ -37,21 +36,8 @@ export default function Profile() {
           },
         ]}
       >
-        Manage your profile
+        Manage your projects
       </Text>
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text
-          style={{
-            color: theme.colors.safetyOrange,
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: 18,
-            paddingVertical: 12,
-          }}
-          onPress={logout}
-        >
-          Logout
-        </Text>
-      </View>
     </View>
   );
 }

@@ -10,11 +10,11 @@ export const LightColors = {
   // Semantic Colors - Light Mode
   primary: "#FF7A00",
   secondary: "#334155",
-  background: "#FFFFFF",
-  surface: "#F8F9FA",
+  background: "#F8F9FA", // Soft off-white
+  surface: "#FFFFFF", // True white for cards, tab bar, etc.
   text: {
     primary: "#1E1E1E",
-    secondary: "#334155",
+    secondary: "#222110", // Darker for better contrast
     muted: "#6B7280",
   },
 
