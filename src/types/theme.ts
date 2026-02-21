@@ -4,6 +4,7 @@ export const LightColors = {
   safetyOrange: "#FF7A00", // Your primary brand color
   slateGray: "#334155", // Secondary/text color
   industrialBlack: "#1E1E1E", // Dark accent
+  midnightBlue: "#111727", // New color
   safetyTint: "#FFF4E6", // Light tint (20% alpha of orange)
 
   // Semantic Colors - Light Mode
@@ -43,6 +44,7 @@ export const DarkColors = {
   safetyOrange: "#FF7A00", // Your primary brand color
   slateGray: "#334155", // Secondary/text color
   industrialBlack: "#1E1E1E", // Dark background
+  midnightBlue: "#111727", // New color
   safetyTint: "#FFF4E6", // Light tint (20% alpha of orange)
 
   // Semantic Colors - Dark Mode

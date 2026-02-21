@@ -1,18 +1,28 @@
 import { useAuth } from "@/src/context/AuthContext";
-import { Button, Text, View } from "react-native";
+import { useTheme } from "@/src/context/ThemeContext";
+import { Button, StyleSheet, Text, View } from "react-native";
 
 export default function Profile() {
   const { logout } = useAuth();
+  const { theme } = useTheme();
   return (
     <View
-      style={{
-        flex: 1,
-        justifyContent: "center",
-        alignItems: "center",
-      }}
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
     >
-      <Text>Profile</Text>
-      <Button title="Logout" onPress={logout} />
+      <Text style={{color: theme.colors.text.primary}}>Profile</Text>
+      <Button
+        styles={{ color: theme.colors.saftyOrange }}
+        title="Logout"
+        onPress={logout}
+      />
     </View>
   );
 }
+
+const styles = StyleSheet.create({
+  container: {
+    flex: 1,
+    justifyContent:'center',
+    alignItems:'center',
+  },
+});
