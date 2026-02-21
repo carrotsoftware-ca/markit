@@ -36,7 +36,7 @@ export default function ProjectsScreen() {
           },
         ]}
       >
-        A quick look at everything 
+        A quick look at everything
       </Text>
     </View>
   );
