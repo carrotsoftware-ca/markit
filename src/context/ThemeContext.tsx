@@ -1,18 +1,27 @@
-import { theme, Theme } from "@types/theme";
-import React, { createContext, ReactNode, useContext } from "react";
+import { lightTheme, darkTheme, Theme } from "@types/theme";
+import React, { createContext, ReactNode, useContext, useState } from "react";
 
 interface ThemeContextType {
   theme: Theme;
-  // You could add theme switching functionality here later
-  // toggleTheme: () => void;
-  // isDark: boolean;
+  isDark: boolean;
+  toggleTheme: () => void;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
+  const [isDark, setIsDark] = useState(true); // Start with dark mode
+
+  const toggleTheme = () => {
+    setIsDark(!isDark);
+  };
+
+  const currentTheme = isDark ? darkTheme : lightTheme;
+
   return (
-    <ThemeContext.Provider value={{ theme }}>{children}</ThemeContext.Provider>
+    <ThemeContext.Provider value={{ theme: currentTheme, isDark, toggleTheme }}>
+      {children}
+    </ThemeContext.Provider>
   );
 };
 

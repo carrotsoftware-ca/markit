@@ -1,79 +1,93 @@
-import { Card, ThemedText, ThemedView } from "@components/ui";
-import { StyleSheet } from "react-native";
+import { StyleSheet, View, Text } from "react-native";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function Index() {
   const { theme } = useTheme();
 
   return (
-    <ThemedView style={styles.container}>
-      <ThemedText variant="heading" style={styles.title}>
+    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
+      <Text style={[styles.title, { 
+        color: theme.colors.text.primary,
+        fontFamily: theme.typography.fontFamily.bold,
+        fontSize: theme.typography.fontSize["3xl"]
+      }]}>
         markit!
-      </ThemedText>
-      <ThemedText variant="subheading" color="primary" style={styles.subtitle}>
+      </Text>
+      <Text style={[styles.subtitle, { 
+        color: theme.colors.primary,
+        fontFamily: theme.typography.fontFamily.semiBold,
+        fontSize: 12
+      }]}>
         DESIGN SYSTEM V1.0
-      </ThemedText>
-
-      <Card title="The Vision">
-        <ThemedText variant="body" style={styles.cardText}>
+      </Text>
+      
+      <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.cardTitle, { 
+          color: theme.colors.text.primary,
+          fontFamily: theme.typography.fontFamily.semiBold,
+          fontSize: theme.typography.fontSize.xl
+        }]}>
+          The Vision
+        </Text>
+        <Text style={[styles.cardText, { 
+          color: theme.colors.text.primary,
+          fontFamily: theme.typography.fontFamily.regular,
+          fontSize: theme.typography.fontSize.base
+        }]}>
           Empowering contractors to manage projects with precision. markit!
           bridges the gap between rugged field operations and sophisticated
           digital management.
-        </ThemedText>
-      </Card>
+        </Text>
+      </View>
 
-      {/* Color Palette Demo */}
-      <Card title="Brand Colors">
-        <ThemedView style={styles.colorGrid}>
-          <ThemedView
-            style={[
-              styles.colorBox,
-              { backgroundColor: theme.colors.safetyOrange },
-            ]}
-          >
-            <ThemedText variant="caption" weight="medium">
+      <View style={[styles.card, { backgroundColor: theme.colors.surface }]}>
+        <Text style={[styles.cardTitle, { 
+          color: theme.colors.text.primary,
+          fontFamily: theme.typography.fontFamily.semiBold,
+          fontSize: theme.typography.fontSize.xl
+        }]}>
+          Brand Colors
+        </Text>
+        <View style={styles.colorGrid}>
+          <View style={[styles.colorBox, { backgroundColor: theme.colors.safetyOrange }]}>
+            <Text style={[styles.colorLabel, { 
+              fontFamily: theme.typography.fontFamily.medium,
+              fontSize: theme.typography.fontSize.sm
+            }]}>
               Safety Orange
-            </ThemedText>
-          </ThemedView>
-          <ThemedView
-            style={[
-              styles.colorBox,
-              { backgroundColor: theme.colors.slateGray },
-            ]}
-          >
-            <ThemedText variant="caption" weight="medium">
+            </Text>
+          </View>
+          <View style={[styles.colorBox, { backgroundColor: theme.colors.slateGray }]}>
+            <Text style={[styles.colorLabel, { 
+              fontFamily: theme.typography.fontFamily.medium,
+              fontSize: theme.typography.fontSize.sm
+            }]}>
               Slate Gray
-            </ThemedText>
-          </ThemedView>
-          <ThemedView
-            style={[
-              styles.colorBox,
-              { backgroundColor: theme.colors.industrialBlack },
-            ]}
-          >
-            <ThemedText variant="caption" weight="medium">
+            </Text>
+          </View>
+          <View style={[styles.colorBox, { backgroundColor: theme.colors.industrialBlack }]}>
+            <Text style={[styles.colorLabel, { 
+              fontFamily: theme.typography.fontFamily.medium,
+              fontSize: theme.typography.fontSize.sm
+            }]}>
               Industrial Black
-            </ThemedText>
-          </ThemedView>
-          <ThemedView
-            style={[
-              styles.colorBox,
-              { backgroundColor: theme.colors.safetyTint },
-            ]}
-          >
-            <ThemedText
-              variant="caption"
-              weight="medium"
-              style={{ color: theme.colors.industrialBlack }}
-            >
+            </Text>
+          </View>
+          <View style={[styles.colorBox, { backgroundColor: theme.colors.safetyTint }]}>
+            <Text style={[styles.colorLabel, { 
+              color: theme.colors.industrialBlack,
+              fontFamily: theme.typography.fontFamily.medium,
+              fontSize: theme.typography.fontSize.sm
+            }]}>
               Safety Tint
-            </ThemedText>
-          </ThemedView>
-        </ThemedView>
-      </Card>
-    </ThemedView>
+            </Text>
+          </View>
+        </View>
+      </View>
+    </View>
   );
 }
+
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -87,8 +101,15 @@ const styles = StyleSheet.create({
   subtitle: {
     textAlign: "center",
     marginBottom: 32,
-    fontSize: 12,
     letterSpacing: 2,
+  },
+  card: {
+    padding: 20,
+    borderRadius: 12,
+    marginBottom: 16,
+  },
+  cardTitle: {
+    marginBottom: 12,
   },
   cardText: {
     lineHeight: 22,
@@ -105,5 +126,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     alignItems: "center",
     padding: 8,
+  },
+  colorLabel: {
+    color: "#FFFFFF",
+    textAlign: "center",
   },
 });

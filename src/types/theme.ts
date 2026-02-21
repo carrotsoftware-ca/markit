@@ -1,22 +1,23 @@
-export const Colors = {
+// Light and Dark color schemes
+export const LightColors = {
   // Primary Colors from your design system
   safetyOrange: "#FF7A00", // Your primary brand color
   slateGray: "#334155", // Secondary/text color
-  industrialBlack: "#1E1E1E", // Dark background
+  industrialBlack: "#1E1E1E", // Dark accent
   safetyTint: "#FFF4E6", // Light tint (20% alpha of orange)
 
-  // Semantic Colors
+  // Semantic Colors - Light Mode
   primary: "#FF7A00",
   secondary: "#334155",
-  background: "#1E1E1E",
-  surface: "#2A2A2A", // Slightly lighter than industrial black
+  background: "#FFFFFF",
+  surface: "#F8F9FA",
   text: {
-    primary: "#FFFFFF",
-    secondary: "#A3A3A3",
+    primary: "#1E1E1E",
+    secondary: "#334155",
     muted: "#6B7280",
   },
 
-  // Status Colors (you can expand these)
+  // Status Colors
   success: "#10B981",
   warning: "#F59E0B",
   error: "#EF4444",
@@ -36,6 +37,48 @@ export const Colors = {
     900: "#111827",
   },
 } as const;
+
+export const DarkColors = {
+  // Primary Colors from your design system
+  safetyOrange: "#FF7A00", // Your primary brand color
+  slateGray: "#334155", // Secondary/text color
+  industrialBlack: "#1E1E1E", // Dark background
+  safetyTint: "#FFF4E6", // Light tint (20% alpha of orange)
+
+  // Semantic Colors - Dark Mode
+  primary: "#FF7A00",
+  secondary: "#334155",
+  background: "#1E1E1E",
+  surface: "#2A2A2A", // Slightly lighter than industrial black
+  text: {
+    primary: "#FFFFFF",
+    secondary: "#A3A3A3",
+    muted: "#6B7280",
+  },
+
+  // Status Colors
+  success: "#10B981",
+  warning: "#F59E0B",
+  error: "#EF4444",
+  info: "#3B82F6",
+
+  // Neutral Grays
+  gray: {
+    50: "#F9FAFB",
+    100: "#F3F4F6",
+    200: "#E5E7EB",
+    300: "#D1D5DB",
+    400: "#9CA3AF",
+    500: "#6B7280",
+    600: "#4B5563",
+    700: "#374151",
+    800: "#1F2937",
+    900: "#111827",
+  },
+} as const;
+
+// For backwards compatibility
+export const Colors = DarkColors;
 
 export const Typography = {
   fontFamily: {
@@ -82,12 +125,22 @@ export const BorderRadius = {
   full: 9999,
 } as const;
 
-// Create theme object
-export const theme = {
-  colors: Colors,
+// Create theme objects for both modes
+export const lightTheme = {
+  colors: LightColors,
   typography: Typography,
   spacing: Spacing,
   borderRadius: BorderRadius,
 } as const;
 
-export type Theme = typeof theme;
+export const darkTheme = {
+  colors: DarkColors,
+  typography: Typography,
+  spacing: Spacing,
+  borderRadius: BorderRadius,
+} as const;
+
+// For backwards compatibility
+export const theme = darkTheme;
+
+export type Theme = typeof lightTheme;

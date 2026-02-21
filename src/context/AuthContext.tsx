@@ -1,7 +1,7 @@
 // Temporary development mode - disable Firebase for Expo Go
 // import { getAuth } from "@react-native-firebase/auth";
 import { AuthStateType, User } from "@types";
-import { SplashScreen, useRouter } from "expo-router";
+import { useRouter } from "expo-router";
 import React, {
   createContext,
   ReactNode,
@@ -9,8 +9,6 @@ import React, {
   useEffect,
   useState,
 } from "react";
-
-SplashScreen.preventAutoHideAsync();
 
 const AuthContext = createContext<AuthStateType>({
   isLoggedIn: false,
@@ -64,17 +62,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       setIsLoggedIn(false);
       setUser(null);
       setIsReady(true);
-      SplashScreen.hideAsync();
-    }, 1000);
+    }, 500);
 
     // return unsubscribe;
   }, []);
-
-  useEffect(() => {
-    if (isReady) {
-      SplashScreen.hideAsync();
-    }
-  }, [isReady]);
 
   return (
     <AuthContext.Provider value={{ isReady, isLoggedIn, login, logout }}>
