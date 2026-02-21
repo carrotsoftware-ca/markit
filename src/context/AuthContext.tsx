@@ -24,6 +24,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
   const login = async () => {
+    if (__DEV__) {
+      setIsLoggedIn(true);
+      setUser({
+        id: 123,
+        displayName: "Test Account",
+        email: "seeya@chump.com",
+      });
+    }
     // TODO: Replace with actual Firebase authentication (e.g., signInWithEmailAndPassword)
     // For now, this is a placeholder - you'll need to implement actual login logic
     router.replace("/");
