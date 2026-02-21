@@ -8,64 +8,7 @@ export default function Login() {
 
   return (
     <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-      {/* Theme toggle button */}
-      <TouchableOpacity 
-        style={[styles.themeToggle, { backgroundColor: theme.colors.surface }]}
-        onPress={toggleTheme}
-      >
-        <Text style={[styles.themeToggleText, { 
-          color: theme.colors.text.primary,
-          fontFamily: theme.typography.fontFamily.regular 
-        }]}>
-          {isDark ? "☀️ Light" : "🌙 Dark"}
-        </Text>
-      </TouchableOpacity>
-
-      <View style={styles.content}>
-        <Text style={[styles.title, { 
-          color: theme.colors.text.primary,
-          fontFamily: theme.typography.fontFamily.bold,
-          fontSize: theme.typography.fontSize["3xl"]
-        }]}>
-          markit!
-        </Text>
-        <Text style={[styles.subtitle, { 
-          color: theme.colors.text.secondary,
-          fontFamily: theme.typography.fontFamily.regular,
-          fontSize: theme.typography.fontSize.base
-        }]}>
-          Welcome back to your construction management platform
-        </Text>
-
-        <View style={[styles.loginCard, { backgroundColor: theme.colors.surface }]}>
-          <Text style={[styles.cardTitle, { 
-            color: theme.colors.text.primary,
-            fontFamily: theme.typography.fontFamily.semiBold,
-            fontSize: theme.typography.fontSize.xl
-          }]}>
-            Sign In
-          </Text>
-          
-          <TouchableOpacity 
-            style={[styles.button, { backgroundColor: theme.colors.primary }]}
-            onPress={login}
-          >
-            <Text style={[styles.buttonText, { 
-              fontFamily: theme.typography.fontFamily.semiBold 
-            }]}>
-              Continue to Dashboard
-            </Text>
-          </TouchableOpacity>
-
-          <Text style={[styles.note, { 
-            color: theme.colors.text.muted,
-            fontFamily: theme.typography.fontFamily.regular,
-            fontSize: theme.typography.fontSize.sm
-          }]}>
-            Development Mode - Tap to enter app
-          </Text>
-        </View>
-      </View>
+    
     </View>
   );
 }
