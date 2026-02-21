@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "784107784111",
+    "project_id": "markit-fb8ef",
+    "storage_bucket": "markit-fb8ef.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:784107784111:android:600f10937ae13b12df115a",
+        "android_client_info": {
+          "package_name": "com.carrotsoftware.markit"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyA7UzvJaZy58IwyA8C1KY1IgRS002tI5No"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

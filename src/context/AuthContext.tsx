@@ -7,6 +7,7 @@ import React, {
   useEffect,
   useState,
 } from "react";
+
 type User = {
   id: string;
   name: string;
@@ -16,13 +17,6 @@ type AuthStateType = {
   isLoggedIn: boolean;
   isReady: boolean;
   login: () => void;
-  logout: () => void;
-};
-
-type AuthContextType = {
-  isLoggedIn: boolean;
-  user: User | null;
-  login: (userData: User) => void;
   logout: () => void;
 };
 
@@ -65,9 +59,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    
     const getAuthFromStorage = async () => {
-      await new Promise((res) => setTimeout(() => res(null), 2000))
+      await new Promise((res) => setTimeout(() => res(null), 2000));
       try {
         const value = await AsyncStorage.getItem(authKey);
         if (value) {
@@ -83,10 +76,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   useEffect(() => {
-    if(isReady){
-      SplashScreen.hideAsync()
+    if (isReady) {
+      SplashScreen.hideAsync();
     }
-  }, [isReady])
+  }, [isReady]);
 
   return (
     <AuthContext.Provider value={{ isReady, isLoggedIn, login, logout }}>
