@@ -2,7 +2,7 @@ import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
-import { LogBox } from "react-native";
+import { LogBox, Platform } from "react-native";
 import { Toaster } from "sonner-native";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
@@ -15,8 +15,13 @@ LogBox.ignoreLogs([
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
 
-// Initialize Firebase (resolves to index.web.tsx on web, index.tsx on native)
-require("@/src/services/firebase");
+// Initialize Firebase - platform resolution doesn't work with static export,
+// so we explicitly require per platform
+if (Platform.OS === "web") {
+  require("@/src/services/firebase/index.web");
+} else {
+  require("@/src/services/firebase/index");
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
