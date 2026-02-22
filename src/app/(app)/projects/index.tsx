@@ -2,7 +2,7 @@ import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import FloatingActionButton from "@/src/components/ui/buttons/FloatingActionButton";
 import LargeCard from "@/src/components/ui/cards/LargeCard";
 import { useTheme } from "@/src/context/ThemeContext";
-import { Link } from "expo-router";
+import { Link, useRouter } from "expo-router";
 import React from "react";
 import { ScrollView, StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -97,6 +97,7 @@ const dummyProjects = [
 export default function ProjectsScreen() {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
+  const router = useRouter();
 
   return (
     <AuthScreenWrapper
@@ -124,7 +125,8 @@ export default function ProjectsScreen() {
       </ScrollView>
       <FloatingActionButton
         onPress={() => {
-          /* TODO: handle add project */
+          // Open the add project modal
+          router.push("/projects/add-project");
         }}
       />
     </AuthScreenWrapper>
