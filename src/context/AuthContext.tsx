@@ -1,5 +1,6 @@
-// Temporary development mode - disable Firebase for Expo Go
-// import { getAuth } from "@react-native-firebase/auth";
+import * as appleAuth from "@/src/services/auth/apple";
+import * as emailAuth from "@/src/services/auth/email";
+import * as googleAuth from "@/src/services/auth/google";
 import { AuthStateType, User } from "@types";
 import { useRouter } from "expo-router";
 import React, {
@@ -17,35 +18,37 @@ const AuthContext = createContext<AuthStateType>({
   logout: () => {},
 });
 
+const authenticators = {
+  google: googleAuth,
+  email: emailAuth,
+  apple: appleAuth,
+};
+
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const router = useRouter();
   const [user, setUser] = useState<User | null>(null);
   const [isReady, setIsReady] = useState(false);
   const [isLoggedIn, setIsLoggedIn] = useState(false);
 
-  const login = async () => {
-    if (__DEV__) {
-      setIsLoggedIn(true);
-      setUser({
-        id: 123,
-        displayName: "Test Account",
-        email: "seeya@chump.com",
-      });
+  const login = async (type = "google", credentials?: any) => {
+    const auth = authenticators[type];
+    if (!auth) throw new Error("Unknown auth type");
+    const userData = await auth.login(credentials);
+    if (!userData) {
+      // Login was cancelled or failed, do not proceed
+      return;
     }
-    // TODO: Replace with actual Firebase authentication (e.g., signInWithEmailAndPassword)
-    // For now, this is a placeholder - you'll need to implement actual login logic
+    setIsLoggedIn(true);
+    setUser(userData);
     router.replace("/");
   };
 
-  const logout = async () => {
-    try {
-      // await getAuth().signOut(); // Disabled for Expo Go development
-      setIsLoggedIn(false);
-      setUser(null);
-      router.replace("/login");
-    } catch (error) {
-      console.error("Logout error:", error);
-    }
+  const logout = async (type = "google") => {
+    const auth = authenticators[type];
+    if (auth && auth.logout) await auth.logout();
+    setIsLoggedIn(false);
+    setUser(null);
+    router.replace("/login");
   };
 
   useEffect(() => {
@@ -76,7 +79,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{user, isReady, isLoggedIn, login, logout }}>
+    <AuthContext.Provider value={{ user, isReady, isLoggedIn, login, logout }}>
       {children}
     </AuthContext.Provider>
   );
