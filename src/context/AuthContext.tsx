@@ -1,6 +1,7 @@
 import * as appleAuth from "@/src/services/auth/apple";
 import * as emailAuth from "@/src/services/auth/email";
 import * as googleAuth from "@/src/services/auth/google";
+import { getAuth } from "@/src/services/firebase";
 import { AuthStateType, User } from "@types";
 import { useRouter } from "expo-router";
 import React, {
@@ -52,30 +53,27 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
-    // Temporary development mode - simulate auth state
-    // const unsubscribe = getAuth().onAuthStateChanged((user) => {
-    //   if (user) {
-    //     setIsLoggedIn(true);
-    //     setUser({
-    //       id: user.uid,
-    //       displayName: user.displayName,
-    //       email: user.email,
-    //     });
-    //   } else {
-    //     setIsLoggedIn(false);
-    //     setUser(null);
-    //   }
-    //   setIsReady(true);
-    // });
-
-    // Simulate logged out state for development
-    setTimeout(() => {
-      setIsLoggedIn(false);
-      setUser(null);
+    console.log("🔥 Setting up auth listener...");
+    const unsubscribe = getAuth().onAuthStateChanged((user) => {
+      console.log(
+        "🔥 Auth state changed:",
+        user ? "User: " + user.email : "No user",
+      );
+      if (user) {
+        console.log(user)
+        setIsLoggedIn(true);
+        setUser({
+          id: user.uid,
+          displayName: user.displayName,
+          email: user.email,
+        });
+      } else {
+        setIsLoggedIn(false);
+        setUser(null);
+      }
       setIsReady(true);
-    }, 500);
-
-    // return unsubscribe;
+    });
+    return unsubscribe;
   }, []);
 
   return (
