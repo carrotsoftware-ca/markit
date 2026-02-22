@@ -1,11 +1,13 @@
+import TextInput from "@/src/components/forms/inputs/TextInput";
 import loginSchema from "@/src/components/forms/validators/loginSchema";
-import TextInput from "@/src/components/inputs/TextInput";
+import { useTheme } from "@/src/context/ThemeContext";
 import { yupResolver } from "@hookform/resolvers/yup";
 import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 
 export default function LoginForm({ onSubmit }) {
+  const { theme } = useTheme();
   const {
     control,
     handleSubmit,
@@ -16,7 +18,9 @@ export default function LoginForm({ onSubmit }) {
 
   return (
     <View style={styles.form}>
-      <Text style={styles.title}>Sign in</Text>
+      <Text style={[styles.title, { color: theme.colors.primary }]}>
+        Sign in
+      </Text>
       <Controller
         control={control}
         name="email"

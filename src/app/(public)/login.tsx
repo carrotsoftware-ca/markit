@@ -1,14 +1,65 @@
-import { useAuth } from "@/src/context/AuthContext";
-import { StyleSheet, TouchableOpacity, View, Text } from "react-native";
+import SmallCard from "@/src/components/ui/cards/SmallCard";
+import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
+import { Pressable, StyleSheet, View } from "react-native";
+import { useAuth } from "../../context/AuthContext";
 import { useTheme } from "../../context/ThemeContext";
 
 export default function Login() {
+  const { theme, isDark } = useTheme();
   const { login } = useAuth();
-  const { theme, toggleTheme, isDark } = useTheme();
+
+  const cardStyle = {
+    backgroundColor: theme.colors.midnightBlue,
+    borderWidth: 1,
+    borderColor: theme.colors.safetyOrange,
+  };
+  const textStyle = {
+    color: theme.colors.safetyTint,
+    fontWeight: "bold",
+  };
 
   return (
-    <View style={[styles.container, { backgroundColor: theme.colors.background }]}>
-    
+    <View
+      style={[styles.container, { backgroundColor: theme.colors.background }]}
+    >
+      <Pressable
+        onPress={() => login("google")}
+        style={({ pressed }) => [
+          pressed && { opacity: 0.7, borderColor: theme.colors.primary },
+        ]}
+      >
+        <SmallCard
+          title="Sign in with Google"
+          icon={
+            <FontAwesome
+              name="google"
+              size={24}
+              color={theme.colors.safetyTint}
+            />
+          }
+          style={cardStyle}
+          titleStyle={textStyle}
+        />
+      </Pressable>
+      <Pressable
+        onPress={() => login("apple")}
+        style={({ pressed }) => [
+          pressed && { opacity: 0.7, borderColor: theme.colors.primary },
+        ]}
+      >
+        <SmallCard
+          title="Sign in with Apple"
+          icon={
+            <MaterialCommunityIcons
+              name="apple"
+              size={24}
+              color={theme.colors.safetyTint}
+            />
+          }
+          style={cardStyle}
+          titleStyle={textStyle}
+        />
+      </Pressable>
     </View>
   );
 }
@@ -16,59 +67,8 @@ export default function Login() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-  },
-  themeToggle: {
-    position: "absolute",
-    top: 50,
-    right: 20,
-    zIndex: 1,
-    paddingHorizontal: 12,
-    paddingVertical: 8,
-    borderRadius: 20,
-  },
-  themeToggleText: {
-    fontSize: 12,
-  },
-  content: {
-    flex: 1,
     justifyContent: "center",
-    alignItems: "center",
-    padding: 24,
-  },
-  title: {
-    textAlign: "center",
-    marginBottom: 8,
-  },
-  subtitle: {
-    textAlign: "center",
-    marginBottom: 40,
-    opacity: 0.8,
-  },
-  loginCard: {
     width: "100%",
-    maxWidth: 300,
-    alignItems: "center",
-    padding: 24,
-    borderRadius: 12,
-  },
-  cardTitle: {
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  button: {
-    width: "100%",
-    paddingVertical: 16,
     paddingHorizontal: 24,
-    borderRadius: 8,
-    alignItems: "center",
-    marginBottom: 16,
-  },
-  buttonText: {
-    color: "#FFFFFF",
-    fontSize: 16,
-  },
-  note: {
-    textAlign: "center",
-    opacity: 0.6,
   },
 });
