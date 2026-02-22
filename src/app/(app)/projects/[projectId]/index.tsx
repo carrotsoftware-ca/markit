@@ -3,10 +3,10 @@ import { useLocalSearchParams } from "expo-router";
 import React from "react";
 
 export default function QuoteScreen() {
-  const { projectId } = useLocalSearchParams();
+  const { projectId, name, status } = useLocalSearchParams();
 
   return (
-    <AuthScreenWrapper title="Project Details" subtitle={`Project: ${projectId}`}>
+    <AuthScreenWrapper title={`${name}`} subtitle={`${status}`}>
       {/* Add quote details or actions here */}
     </AuthScreenWrapper>
   );
