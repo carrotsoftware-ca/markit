@@ -3,14 +3,9 @@ import { useAuth } from "@/src/context/AuthContext";
 import { JobsProvider } from "@/src/context/JobsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
-import { createDrawerNavigator } from "@react-navigation/drawer";
+import { Drawer } from "expo-router/drawer";
 import { Redirect } from "expo-router";
-import { StatusBar, Text } from "react-native";
-import IndexScreen from "./index";
-import ProfileScreen from "./profile";
-import ProjectsScreen from "./projects";
-
-const Drawer = createDrawerNavigator();
+import { StatusBar } from "react-native";
 
 export default function Layout() {
   const { isReady, isLoggedIn } = useAuth();
@@ -21,6 +16,7 @@ export default function Layout() {
   if (!isLoggedIn) {
     return <Redirect href="/login" />;
   }
+
   return (
     <JobsProvider>
       <>
@@ -33,7 +29,7 @@ export default function Layout() {
           }
         />
         <AppHeader />
-        <Drawer.Navigator
+        <Drawer
           screenOptions={{
             headerShown: false,
             drawerType: "permanent",
@@ -48,33 +44,36 @@ export default function Layout() {
           }}
         >
           <Drawer.Screen
-            name="Home"
-            component={IndexScreen}
+            name="index"
             options={{
+              drawerLabel: "Home",
+              title: "Home",
               drawerIcon: ({ color, size }) => (
                 <Ionicons name="home-outline" size={size} color={color} />
               ),
             }}
           />
           <Drawer.Screen
-            name="Projects"
-            component={ProjectsScreen}
+            name="projects"
             options={{
+              drawerLabel: "Projects",
+              title: "Projects",
               drawerIcon: ({ color, size }) => (
                 <Ionicons name="briefcase-outline" size={size} color={color} />
               ),
             }}
           />
           <Drawer.Screen
-            name="Profile"
-            component={ProfileScreen}
+            name="profile"
             options={{
+              drawerLabel: "Profile",
+              title: "Profile",
               drawerIcon: ({ color, size }) => (
                 <Ionicons name="person-outline" size={size} color={color} />
               ),
             }}
           />
-        </Drawer.Navigator>
+        </Drawer>
       </>
     </JobsProvider>
   );
