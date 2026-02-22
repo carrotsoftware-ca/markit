@@ -7,7 +7,6 @@ import { Toaster } from "sonner-native";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
 
-globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 LogBox.ignoreLogs([
   "Sending `onAnimatedValueUpdate` with no listeners registered.",
 ]);
