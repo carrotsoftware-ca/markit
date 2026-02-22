@@ -3,7 +3,7 @@ import React, { createContext, useContext } from "react";
 const JobsContext = createContext();
 
 export const JobsProvider = ({ children }) => {
-  const [loading, setLoading] = React.useState(false)
+  const [loading, setLoading] = React.useState(false);
   const [jobs, setJobs] = React.useState([]);
 
   return (
@@ -21,7 +21,7 @@ export const JobsProvider = ({ children }) => {
 export const useJobs = () => {
   const context = useContext(JobsContext);
   if (!context) {
-    throw new Error("useJobs must be used within a JobsProvider");
+    throw new Error("useJobs must be used within a jobs provider");
   }
 
   return context;

@@ -1,8 +1,9 @@
-import { StackActions, CommonActions } from '@react-navigation/native';
+import { CommonActions } from "@react-navigation/native";
 
 import { AppHeader } from "@/src/components/navigation/AppHeader";
 import { useAuth } from "@/src/context/AuthContext";
 import { JobsProvider } from "@/src/context/JobsContext";
+import { ProjectsProvider } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect } from "expo-router";
@@ -20,85 +21,91 @@ export default function Layout() {
   }
 
   return (
-    <JobsProvider>
-      <>
-        <StatusBar
-          backgroundColor={theme.colors.midnightBlue}
-          barStyle={
-            theme.colors.background === "#FFFFFF"
-              ? "dark-content"
-              : "light-content"
-          }
-        />
-        <AppHeader />
-        <Drawer
-          screenOptions={{
-            headerShown: false,
-            drawerType: "permanent",
-            popToTopOnBlur: true,
-            drawerStyle: {
-              backgroundColor: isDark
-                ? theme.colors.midnightBlue
-                : theme.colors.surface,
-              width: 240,
-            },
-            drawerActiveTintColor: theme.colors.safetyOrange,
-            drawerInactiveTintColor: theme.colors.slateGray,
-          }}
-        >
-          <Drawer.Screen
-            name="index"
-            options={{
-              drawerLabel: "Home",
-              title: "Home",
-              drawerIcon: ({ color, size }) => (
-                <Ionicons name="home-outline" size={size} color={color} />
-              ),
-            }}
+    <ProjectsProvider>
+      <JobsProvider>
+        <>
+          <StatusBar
+            backgroundColor={theme.colors.midnightBlue}
+            barStyle={
+              theme.colors.background === "#FFFFFF"
+                ? "dark-content"
+                : "light-content"
+            }
           />
-          <Drawer.Screen
-            name="projects"
-            options={{
-              drawerLabel: "Projects",
-              title: "Projects",
-              drawerIcon: ({ color, size }) => (
-                <Ionicons name="briefcase-outline" size={size} color={color} />
-              ),
-            }}
-            listeners={({ navigation }) => ({
-              drawerItemPress: (e) => {
-                // 1. Stop the default "switch focus" behavior
-                e.preventDefault();
-
-                // 2. Force the entire stack to reset to its index screen
-                navigation.dispatch(
-                  CommonActions.reset({
-                    index: 0,
-                    routes: [
-                      { 
-                        name: 'projects',
-                        state: {
-                          routes: [{ name: 'index' }] // This targets the nested stack's index
-                        }
-                      }
-                    ],
-                  })
-                );
+          <AppHeader />
+          <Drawer
+            screenOptions={{
+              headerShown: false,
+              drawerType: "permanent",
+              popToTopOnBlur: true,
+              drawerStyle: {
+                backgroundColor: isDark
+                  ? theme.colors.midnightBlue
+                  : theme.colors.surface,
+                width: 240,
               },
-            })}
-          />
-          <Drawer.Screen
-            name="profile"
-            options={{
-              drawerLabel: "Profile",
-              title: "Profile",
-              drawerIcon: ({ color, size }) => (
-                <Ionicons name="person-outline" size={size} color={color} />
-              ),
+              drawerActiveTintColor: theme.colors.safetyOrange,
+              drawerInactiveTintColor: theme.colors.slateGray,
             }}
-          />
-        </Drawer>
-      </>
-    </JobsProvider>
+          >
+            <Drawer.Screen
+              name="index"
+              options={{
+                drawerLabel: "Home",
+                title: "Home",
+                drawerIcon: ({ color, size }) => (
+                  <Ionicons name="home-outline" size={size} color={color} />
+                ),
+              }}
+            />
+            <Drawer.Screen
+              name="projects"
+              options={{
+                drawerLabel: "Projects",
+                title: "Projects",
+                drawerIcon: ({ color, size }) => (
+                  <Ionicons
+                    name="briefcase-outline"
+                    size={size}
+                    color={color}
+                  />
+                ),
+              }}
+              listeners={({ navigation }) => ({
+                drawerItemPress: (e) => {
+                  // 1. Stop the default "switch focus" behavior
+                  e.preventDefault();
+
+                  // 2. Force the entire stack to reset to its index screen
+                  navigation.dispatch(
+                    CommonActions.reset({
+                      index: 0,
+                      routes: [
+                        {
+                          name: "projects",
+                          state: {
+                            routes: [{ name: "index" }], // This targets the nested stack's index
+                          },
+                        },
+                      ],
+                    }),
+                  );
+                },
+              })}
+            />
+            <Drawer.Screen
+              name="profile"
+              options={{
+                drawerLabel: "Profile",
+                title: "Profile",
+                drawerIcon: ({ color, size }) => (
+                  <Ionicons name="person-outline" size={size} color={color} />
+                ),
+              }}
+            />
+          </Drawer>
+        </>
+      </JobsProvider>
+    </ProjectsProvider>
   );
 }
