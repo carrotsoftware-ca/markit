@@ -3,10 +3,10 @@ import { useLocalSearchParams } from "expo-router";
 import React from "react";
 
 export default function Jobs() {
-  const { id } = useLocalSearchParams();
+  const { projectId, jobId } = useLocalSearchParams();
 
   return (
-    <AuthScreenWrapper title="Job" subtitle={`Job for project ${id}`}>
+    <AuthScreenWrapper title="Job" subtitle={`Job ${jobId}`}>
       {/* Add quote details or actions here */}
     </AuthScreenWrapper>
   );

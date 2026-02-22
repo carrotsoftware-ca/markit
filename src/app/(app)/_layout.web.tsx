@@ -1,3 +1,5 @@
+import { StackActions, CommonActions } from '@react-navigation/native';
+
 import { AppHeader } from "@/src/components/navigation/AppHeader";
 import { useAuth } from "@/src/context/AuthContext";
 import { JobsProvider } from "@/src/context/JobsContext";
@@ -33,6 +35,7 @@ export default function Layout() {
           screenOptions={{
             headerShown: false,
             drawerType: "permanent",
+            popToTopOnBlur: true,
             drawerStyle: {
               backgroundColor: isDark
                 ? theme.colors.midnightBlue
@@ -62,6 +65,27 @@ export default function Layout() {
                 <Ionicons name="briefcase-outline" size={size} color={color} />
               ),
             }}
+            listeners={({ navigation }) => ({
+              drawerItemPress: (e) => {
+                // 1. Stop the default "switch focus" behavior
+                e.preventDefault();
+
+                // 2. Force the entire stack to reset to its index screen
+                navigation.dispatch(
+                  CommonActions.reset({
+                    index: 0,
+                    routes: [
+                      { 
+                        name: 'projects',
+                        state: {
+                          routes: [{ name: 'index' }] // This targets the nested stack's index
+                        }
+                      }
+                    ],
+                  })
+                );
+              },
+            })}
           />
           <Drawer.Screen
             name="profile"
