@@ -21,6 +21,7 @@ const firebaseConfig = {
 // Only initialize if not already initialized
 if (getApps().length === 0) {
   const app = initializeApp(firebaseConfig);
+  console.log(app);
   if (typeof window !== "undefined") {
     getAnalytics(app);
   }
@@ -34,3 +35,6 @@ if (getApps().length === 0) {
     connectStorageEmulator(getStorage(), host, 9199);
   }
 }
+
+// Export auth instance for use in the app
+export { getAuth, getFirestore, getFunctions, getStorage };
