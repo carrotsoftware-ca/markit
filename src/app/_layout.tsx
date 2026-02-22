@@ -1,5 +1,5 @@
 import { useEffect } from "react";
-import { ActivityIndicator, LogBox, View } from "react-native";
+import { ActivityIndicator, LogBox, View, Platform } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
@@ -14,6 +14,10 @@ LogBox.ignoreLogs([
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
+
+if (Platform.OS === "web") {
+  require("@/src/services/firebase");
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
