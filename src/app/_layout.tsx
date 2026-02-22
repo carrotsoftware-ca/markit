@@ -1,11 +1,16 @@
 import { useEffect } from "react";
-import { ActivityIndicator, View } from "react-native";
+import { ActivityIndicator, LogBox, View } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
 import { Toaster } from 'sonner-native';
+
+globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
+LogBox.ignoreLogs([
+  'Sending `onAnimatedValueUpdate` with no listeners registered.',
+]);
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
