@@ -11,7 +11,8 @@
     "ios": {
       "googleServicesFile": "./src/services/firebase/GoogleService-Info.plist",
       "supportsTablet": true,
-      "bundleIdentifier": "com.carrotsoftware.markit"
+      "bundleIdentifier": "com.carrotsoftware.markit",
+      "usesAppleSignIn": true
     },
     "android": {
       "googleServicesFile": "./src/services/firebase/google-services.json",
@@ -31,6 +32,7 @@
     },
     "plugins": [
       ["@react-native-google-signin/google-signin"],
+      ["expo-apple-authentication"],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "@react-native-firebase/crashlytics",
