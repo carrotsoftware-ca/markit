@@ -9,7 +9,7 @@ export default function ProjectsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <AuthScreenWrapper title="Projects" subtitle="A quick look at what you have going on!">
+    <AuthScreenWrapper title="Projects" subtitle="You can find all your projects here">
       {/* Add any additional content here */}
     </AuthScreenWrapper>
   );
