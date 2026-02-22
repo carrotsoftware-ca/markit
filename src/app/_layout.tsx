@@ -1,10 +1,11 @@
+import { useEffect } from "react";
+import { ActivityIndicator, View } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
-import { ActivityIndicator, View } from "react-native";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
-import { useEffect } from "react";
+import { Toaster } from 'sonner-native';
 
 // Keep the splash screen visible while we fetch resources
 SplashScreen.preventAutoHideAsync();
@@ -36,6 +37,7 @@ export default function RootLayout() {
             headerShown: false,
           }}
         />
+        <Toaster />
       </AuthProvider>
     </ThemeProvider>
   );
