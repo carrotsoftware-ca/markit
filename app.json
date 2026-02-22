@@ -8,6 +8,10 @@
     "scheme": "markit",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "assetBundlePatterns": [
+      "assets/fonts/**",
+      "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/**"
+    ],
     "ios": {
       "googleServicesFile": "./src/services/firebase/GoogleService-Info.plist",
       "supportsTablet": true,
