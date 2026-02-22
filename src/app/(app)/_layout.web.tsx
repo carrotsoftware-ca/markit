@@ -3,8 +3,8 @@ import { useAuth } from "@/src/context/AuthContext";
 import { JobsProvider } from "@/src/context/JobsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
-import { Drawer } from "expo-router/drawer";
 import { Redirect } from "expo-router";
+import { Drawer } from "expo-router/drawer";
 import { StatusBar } from "react-native";
 
 export default function Layout() {

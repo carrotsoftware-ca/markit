@@ -1,3 +1,4 @@
+import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import { useAuth } from "@/src/context/AuthContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { StyleSheet, Text, View } from "react-native";
@@ -9,36 +10,10 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.background,
-        },
-      ]}
+    <AuthScreenWrapper
+      title={user?.displayName || "Profile"}
+      subtitle="Manage your profile"
     >
-      <Text
-        style={[
-          styles.title,
-          {
-            color: theme.colors.text.primary,
-            fontFamily: theme.typography.fontFamily.bold,
-          },
-        ]}
-      >
-        {user?.displayName}
-      </Text>
-      <Text
-        style={[
-          styles.subtitle,
-          {
-            color: theme.colors.text.secondary,
-            fontFamily: theme.typography.fontFamily.regular,
-          },
-        ]}
-      >
-        Manage your profile
-      </Text>
       <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
         <Text
           style={{
@@ -52,7 +27,7 @@ export default function Profile() {
           Logout
         </Text>
       </View>
-    </View>
+    </AuthScreenWrapper>
   );
 }
 

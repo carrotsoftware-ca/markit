@@ -1,6 +1,7 @@
+import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import { useTheme } from "@/src/context/ThemeContext";
 import React from "react";
-import { StyleSheet, Text, View } from "react-native";
+import { StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ProjectsScreen() {
@@ -8,37 +9,9 @@ export default function ProjectsScreen() {
   const insets = useSafeAreaInsets();
 
   return (
-    <View
-      style={[
-        styles.container,
-        {
-          backgroundColor: theme.colors.background,
-        },
-      ]}
-    >
-      <Text
-        style={[
-          styles.title,
-          {
-            color: theme.colors.text.primary,
-            fontFamily: theme.typography.fontFamily.bold,
-          },
-        ]}
-      >
-        Dashboard
-      </Text>
-      <Text
-        style={[
-          styles.subtitle,
-          {
-            color: theme.colors.text.secondary,
-            fontFamily: theme.typography.fontFamily.regular,
-          },
-        ]}
-      >
-        A quick look at everything
-      </Text>
-    </View>
+    <AuthScreenWrapper title="Dashboard" subtitle="A quick look at everything">
+      {/* Add any additional dashboard content here */}
+    </AuthScreenWrapper>
   );
 }
 

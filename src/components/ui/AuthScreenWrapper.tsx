@@ -3,7 +3,17 @@ import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
-export default function ProjectsScreen() {
+interface AuthScreenWrapperProps {
+  title: string;
+  subtitle: string;
+  children: React.ReactNode;
+}
+
+export default function AuthScreenWrapper({
+  title,
+  subtitle,
+  children,
+}: AuthScreenWrapperProps) {
   const { theme } = useTheme();
   const insets = useSafeAreaInsets();
 
@@ -25,7 +35,7 @@ export default function ProjectsScreen() {
           },
         ]}
       >
-        Projects
+        {title}
       </Text>
       <Text
         style={[
@@ -36,8 +46,9 @@ export default function ProjectsScreen() {
           },
         ]}
       >
-        Manage your projects
+        {subtitle}
       </Text>
+      <View style={{ flex: 1 }}>{children}</View>
     </View>
   );
 }
@@ -55,5 +66,6 @@ const styles = StyleSheet.create({
   subtitle: {
     fontSize: 16,
     opacity: 0.7,
+    marginBottom: 16,
   },
 });
