@@ -1,15 +1,31 @@
 // Use Firebase JS SDK for web Google sign-in
-import { getAuth, signInWithPopup, GoogleAuthProvider, signOut } from "firebase/auth";
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signOut,
+} from "firebase/auth";
 
 export async function login() {
   const auth = getAuth();
   const provider = new GoogleAuthProvider();
-  const result = await signInWithPopup(auth, provider);
-  // Normalize user object if needed
-  return {
-    user: result.user,
-    credential: GoogleAuthProvider.credentialFromResult(result),
-  };
+  try {
+    const result = await signInWithPopup(auth, provider);
+    const firebaseUser = result.user;
+    const displayName =
+      firebaseUser.displayName || firebaseUser.email || "User";
+    return {
+      id: firebaseUser.uid,
+      displayName,
+      email: firebaseUser.email,
+    };
+  } catch (error) {
+    if (error.code === "auth/popup-closed-by-user") {
+      // User closed the popup, treat as cancel
+      return null;
+    }
+    throw error;
+  }
 }
 
 export async function logout() {

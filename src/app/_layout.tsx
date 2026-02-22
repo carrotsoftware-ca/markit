@@ -1,15 +1,15 @@
-import { useEffect } from "react";
-import { ActivityIndicator, LogBox, View, Platform } from "react-native";
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { LogBox, Platform } from "react-native";
+import { Toaster } from "sonner-native";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
-import { Toaster } from 'sonner-native';
 
 globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 LogBox.ignoreLogs([
-  'Sending `onAnimatedValueUpdate` with no listeners registered.',
+  "Sending `onAnimatedValueUpdate` with no listeners registered.",
 ]);
 
 // Keep the splash screen visible while we fetch resources

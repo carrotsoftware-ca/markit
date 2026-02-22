@@ -34,6 +34,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const auth = authenticators[type];
     if (!auth) throw new Error("Unknown auth type");
     const userData = await auth.login(credentials);
+    if (!userData) {
+      // Login was cancelled or failed, do not proceed
+      return;
+    }
     setIsLoggedIn(true);
     setUser(userData);
     router.replace("/");

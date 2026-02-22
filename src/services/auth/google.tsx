@@ -10,12 +10,17 @@ export async function login() {
   try {
     await GoogleSignin.hasPlayServices();
     const googleUser = await GoogleSignin.signIn();
+    if (!googleUser || !googleUser.data) {
+      // User cancelled sign-in
+      return null;
+    }
     const { idToken, user: googleProfile } = googleUser.data;
     if (!idToken) {
       throw new Error("Google Sign-In did not return an idToken");
     }
     const googleCredential = await GoogleAuthProvider.credential(idToken);
-    const { user: firebaseUser } = await getAuth().signInWithCredential(googleCredential);
+    const { user: firebaseUser } =
+      await getAuth().signInWithCredential(googleCredential);
 
     const displayName =
       [googleProfile.givenName, googleProfile.familyName]
