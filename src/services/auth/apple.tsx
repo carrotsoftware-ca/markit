@@ -1,4 +1,5 @@
-import { AppleAuthProvider, getAuth } from "@react-native-firebase/auth";
+import { getAuth } from "@/src/services/firebase";
+import { AppleAuthProvider } from "@react-native-firebase/auth";
 import crashlytics from "@react-native-firebase/crashlytics";
 import * as AppleAuthentication from "expo-apple-authentication";
 
