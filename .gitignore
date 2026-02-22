@@ -3,6 +3,7 @@
 # dependencies
 node_modules/
 *.log
+keys/
 # Expo
 .expo/
 dist/
