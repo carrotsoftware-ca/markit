@@ -1,9 +1,9 @@
-import MarkIt from "@/src/components/test/MarkIt";
 import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import { useTheme } from "@/src/context/ThemeContext";
 import React from "react";
 import { StyleSheet } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
+import MarkIt from "@/src/components/MarkIt";
 
 export default function ProjectsScreen() {
   const { theme } = useTheme();
