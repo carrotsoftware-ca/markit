@@ -19,14 +19,8 @@ import {
   useImage,
   vec,
 } from "@shopify/react-native-skia";
-import {
-  Gesture,
-  GestureDetector
-} from "react-native-gesture-handler";
-import {
-  useDerivedValue,
-  useSharedValue
-} from "react-native-reanimated";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
 const { width, height } = Dimensions.get("window");
 
@@ -136,7 +130,7 @@ const MarkIt = () => {
             <Line
               p1={p1}
               p2={p2}
-              color={mode === "calibrate" ? "orange" : "white"}
+              color={mode === "calibrate" ? "orange" : "red"}
               strokeWidth={3}
             />
             {font && (
@@ -145,7 +139,7 @@ const MarkIt = () => {
                 y={labelY}
                 text={distanceText}
                 font={font}
-                color="white"
+                color="black"
               />
             )}
           </Group>
