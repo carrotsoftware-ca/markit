@@ -38,7 +38,7 @@ export default function AddProject() {
 const styles = StyleSheet.create({
   watermark: {
     position: "absolute",
-    bottom: 30,
+    bottom: -10,
     right: -20,
     opacity: 0.07,
   },
