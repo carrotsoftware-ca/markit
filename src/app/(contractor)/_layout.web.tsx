@@ -12,7 +12,8 @@ import { StatusBar } from "react-native";
 
 export default function Layout() {
   const { isReady, isLoggedIn } = useAuth();
-  const { theme, isDark } = useTheme();
+  const { theme, isDark, breakpoint } = useTheme();
+  const isSmallScreen = breakpoint === "sm" || breakpoint === "md";
 
   if (!isReady) return null;
 
@@ -32,11 +33,11 @@ export default function Layout() {
                 : "light-content"
             }
           />
-          <AppHeader />
           <Drawer
             screenOptions={{
-              headerShown: false,
-              drawerType: "permanent",
+              headerShown: true,
+              header: () => <AppHeader showMenuButton={isSmallScreen} />,
+              drawerType: isSmallScreen ? "front" : "permanent",
               popToTopOnBlur: true,
               drawerStyle: {
                 backgroundColor: isDark

@@ -1,11 +1,11 @@
 import React, { useState } from "react";
 import {
-  Dimensions,
   Text as RNText,
   StyleSheet,
   TextInput,
   TouchableOpacity,
   View,
+  useWindowDimensions,
 } from "react-native";
 import Animated, { useAnimatedStyle } from "react-native-reanimated";
 
@@ -22,9 +22,8 @@ import {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
-const { width, height } = Dimensions.get("window");
-
 const MarkIt = () => {
+  const { width, height } = useWindowDimensions();
   const image = useImage(
     `https://images.unsplash.com/photo-1630699144919-681cf308ae82?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`,
   );
