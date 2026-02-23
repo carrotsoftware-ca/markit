@@ -1,6 +1,5 @@
 import { AppHeader } from "@/src/components/navigation/AppHeader";
 import { useAuth } from "@/src/context/AuthContext";
-import { JobsProvider } from "@/src/context/JobsContext";
 import { ProjectsProvider } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
@@ -18,7 +17,6 @@ export default function Layout() {
   }
   return (
     <ProjectsProvider>
-      <JobsProvider>
         <>
           <StatusBar
             backgroundColor={theme.colors.midnightBlue}
@@ -76,7 +74,6 @@ export default function Layout() {
             />
           </Tabs>
         </>
-      </JobsProvider>
     </ProjectsProvider>
   );
 }
