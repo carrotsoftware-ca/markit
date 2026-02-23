@@ -8,6 +8,7 @@
     "android": "expo run:android",
     "ios": "expo run:ios",
     "web": "expo start --web",
+    "export:web": "expo export --platform web && cp public/canvaskit.wasm dist/canvaskit.wasm",
     "lint": "expo lint",
     "postinstall": "cp node_modules/canvaskit-wasm/bin/full/canvaskit.wasm public/canvaskit.wasm"
   },
