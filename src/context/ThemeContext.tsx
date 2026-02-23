@@ -1,16 +1,19 @@
 import { lightTheme, darkTheme, Theme } from "@types/theme";
 import React, { createContext, ReactNode, useContext, useState } from "react";
+import { useBreakpoints } from "../hooks/useBreakpoints";
 
 interface ThemeContextType {
   theme: Theme;
   isDark: boolean;
   toggleTheme: () => void;
+  breakpoint: ReturnType<typeof useBreakpoints>;
 }
 
 const ThemeContext = createContext<ThemeContextType | undefined>(undefined);
 
 export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const [isDark, setIsDark] = useState(true); // Start with dark mode
+  const breakpoint = useBreakpoints();
 
   const toggleTheme = () => {
     setIsDark(!isDark);
@@ -19,7 +22,9 @@ export const ThemeProvider = ({ children }: { children: ReactNode }) => {
   const currentTheme = isDark ? darkTheme : lightTheme;
 
   return (
-    <ThemeContext.Provider value={{ theme: currentTheme, isDark, toggleTheme }}>
+    <ThemeContext.Provider
+      value={{ theme: currentTheme, isDark, toggleTheme, breakpoint }}
+    >
       {children}
     </ThemeContext.Provider>
   );
