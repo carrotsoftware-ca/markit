@@ -8,7 +8,7 @@ function TextInput({ value, onChangeText, placeholder, ...props }) {
 
   const underlineColor = focused
     ? isDark
-      ? theme.colors.midnightBlue
+      ? theme.colors.safetyOrange
       : theme.colors.industrialBlack
     : theme.colors.gray[200];
 

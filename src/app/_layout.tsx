@@ -1,8 +1,9 @@
-import { useFonts } from "expo-font";
-import { Stack } from "expo-router";
-import * as SplashScreen from "expo-splash-screen";
 import { useEffect } from "react";
+import { useFonts } from "expo-font";
 import { LogBox, Platform } from "react-native";
+import * as SplashScreen from "expo-splash-screen";
+import { KeyboardProvider } from "react-native-keyboard-controller";
+import { Stack } from "expo-router";
 import { Toaster } from "sonner-native";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
@@ -42,15 +43,17 @@ export default function RootLayout() {
   }
 
   return (
-    <ThemeProvider>
-      <AuthProvider>
-        <Stack
-          screenOptions={{
-            headerShown: false,
-          }}
-        />
-        <Toaster />
-      </AuthProvider>
-    </ThemeProvider>
+    <KeyboardProvider>
+      <ThemeProvider>
+        <AuthProvider>
+          <Stack
+            screenOptions={{
+              headerShown: false,
+            }}
+          />
+          <Toaster />
+        </AuthProvider>
+      </ThemeProvider>
+    </KeyboardProvider>
   );
 }

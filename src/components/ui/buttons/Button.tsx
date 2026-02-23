@@ -10,8 +10,19 @@ export default function Button({
   style,
   ...props
 }) {
-  const { theme } = useTheme();
-
+  const { theme, isDark } = useTheme();
+  const lightStyles = {
+    backgroundColor: theme.colors.midnightBlue,
+    text: {
+      color: theme.colors.primary
+    }
+  }
+  const darkStyles = {
+    backgroundColor: theme.colors.safetyOrange,
+    text: {
+      color: theme.colors.safetyTint
+    }
+  }
   const backgroundColor =
     variant === "primary"
       ? theme.colors.safetyOrange

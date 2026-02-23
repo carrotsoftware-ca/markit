@@ -1,7 +1,8 @@
+import NewProjectForm from "@/src/components/forms/NewProjectForm";
 import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
+import FormWrapper from "@/src/components/ui/FormWrapper";
 import React from "react";
 import { StyleSheet } from "react-native";
-import NewProjectForm from "@/src/components/forms/NewProjectForm";
 
 export default function AddProject() {
   const handleSubmit = (data) => {
@@ -10,11 +11,10 @@ export default function AddProject() {
   };
 
   return (
-    <AuthScreenWrapper
-      title="New Project"
-      subtitle="Create a new project"
-    >
-      <NewProjectForm onSubmit={handleSubmit} />
+    <AuthScreenWrapper title="New Project" subtitle="Create a new project">
+      <FormWrapper>
+        <NewProjectForm onSubmit={handleSubmit} />
+      </FormWrapper>
     </AuthScreenWrapper>
   );
 }

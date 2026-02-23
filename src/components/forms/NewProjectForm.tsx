@@ -5,6 +5,7 @@ import React from "react";
 import { Controller, useForm } from "react-hook-form";
 import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
 import * as yup from "yup";
+import Button from "../ui/buttons/Button";
 
 const projectSchema = yup.object().shape({
   name: yup
@@ -28,10 +29,10 @@ export default function NewProjectForm({ onSubmit }) {
   });
 
   return (
-    <View style={styles.form}>
-      <Controller
+    <View >
+      <Controller 
         control={control}
-        name="name"
+        name={"name"}
         render={({
           field: { onChange, value, onBlur },
           fieldState: { error },
@@ -41,15 +42,13 @@ export default function NewProjectForm({ onSubmit }) {
             onChangeText={onChange}
             onBlur={onBlur}
             placeholder="Name Of Project"
-            autoCapitalize="none"
-            maxLength={50}
             error={!!error}
           />
         )}
       />
-      <Controller
+      <Controller 
         control={control}
-        name="description"
+        name={"description"}
         render={({
           field: { onChange, value, onBlur },
           fieldState: { error },
@@ -58,46 +57,18 @@ export default function NewProjectForm({ onSubmit }) {
             value={value}
             onChangeText={onChange}
             onBlur={onBlur}
-            placeholder="Project Description"
-            multiline
-            maxLength={200}
+            placeholder="Description of Project"
             error={!!error}
-            style={{ minHeight: 80 }}
           />
         )}
       />
-      <TouchableOpacity style={styles.button} onPress={handleSubmit(onSubmit)}>
-        <Text style={styles.buttonText}>Create Project</Text>
-      </TouchableOpacity>
+      <View>
+        <Button onPress={ handleSubmit(onSubmit)} title={'Create Project'} />
+      </View>
     </View>
   );
 }
 
 const styles = StyleSheet.create({
-  form: {
-    width: "100%",
-    maxWidth: 320,
-    alignSelf: "center",
-    padding: 24,
-    borderRadius: 12,
-    backgroundColor: "#222",
-  },
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    marginBottom: 24,
-    textAlign: "center",
-  },
-  button: {
-    marginTop: 24,
-    paddingVertical: 16,
-    borderRadius: 8,
-    backgroundColor: "#FF7A00",
-    alignItems: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "bold",
-  },
+
 });
