@@ -1,3 +1,4 @@
+import { createjob, deletejob, updatejob, watchjobs } from "@services/jobs";
 import React, { createContext, useContext } from "react";
 
 const JobsContext = createContext();
@@ -11,6 +12,11 @@ export const JobsProvider = ({ children }) => {
       value={{
         loading,
         jobs,
+        setLoading,
+        createjob,
+        updatejob,
+        deletejob,
+        watchjobs,
       }}
     >
       {children}
