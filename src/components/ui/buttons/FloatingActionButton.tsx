@@ -40,7 +40,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.18,
     shadowRadius: 8,
     position: "absolute",
-    right: 24,
+    right: 10,
     bottom: 10,
     zIndex: 10,
   },

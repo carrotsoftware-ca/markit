@@ -1,4 +1,3 @@
-import NewProjectForm from "@/src/components/forms/NewProjectForm";
 import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import FormWrapper from "@/src/components/ui/FormWrapper";
 import React from "react";
@@ -13,7 +12,7 @@ export default function AddProject() {
   return (
     <AuthScreenWrapper title="New Project" subtitle="Create a new project">
       <FormWrapper>
-        <NewProjectForm onSubmit={handleSubmit} />
+        
       </FormWrapper>
     </AuthScreenWrapper>
   );
