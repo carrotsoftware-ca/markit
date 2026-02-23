@@ -1,3 +1,9 @@
+import {
+  createProject,
+  deleteProject,
+  updateProject,
+  watchProjects,
+} from "@services/projects";
 import React, { createContext, useContext } from "react";
 
 const ProjectsContext = createContext();
@@ -11,6 +17,11 @@ export const ProjectsProvider = ({ children }) => {
       value={{
         loading,
         projects,
+        setLoading,
+        createProject,
+        updateProject,
+        deleteProject,
+        watchProjects,
       }}
     >
       {children}
