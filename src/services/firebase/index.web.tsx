@@ -21,7 +21,6 @@ const firebaseConfig = {
 // Only initialize if not already initialized
 if (getApps().length === 0) {
   const app = initializeApp(firebaseConfig);
-  console.log(app);
   if (typeof window !== "undefined") {
     getAnalytics(app);
   }
