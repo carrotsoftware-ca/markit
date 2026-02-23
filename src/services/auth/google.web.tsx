@@ -18,6 +18,7 @@ export async function login() {
       id: firebaseUser.uid,
       displayName,
       email: firebaseUser.email,
+      isNew: result.additionalUserInfo?.isNewUser ?? false,
     };
   } catch (error) {
     if (error.code === "auth/popup-closed-by-user") {
