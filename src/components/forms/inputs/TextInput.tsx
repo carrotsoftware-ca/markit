@@ -2,11 +2,11 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { useState } from "react";
 import { TextInput as RNTextInput, StyleSheet, View } from "react-native";
 
-function TextInput({ value, onChangeText, placeholder, ...props }) {
+function TextInput({ value, onChangeText, placeholder, style, ...props }) {
   const { theme, isDark } = useTheme();
   const [focused, setFocused] = useState(false);
 
-  const underlineColor = focused
+  const borderColor = focused
     ? isDark
       ? theme.colors.safetyOrange
       : theme.colors.industrialBlack
@@ -22,21 +22,17 @@ function TextInput({ value, onChangeText, placeholder, ...props }) {
         style={[
           styles.input,
           {
-            color: theme.colors.text.primary,
-            fontFamily: theme.typography.fontFamily.regular,
+            color: isDark ? "white" : "black",
+            fontSize: 16,
+            backgroundColor: isDark
+              ? theme.colors.slateGray
+              : theme.colors.safetyTint,
+            borderWidth: 1,
+            borderColor: theme.colors.safetyOrange,
           },
+          style,
         ]}
-        onFocus={() => setFocused(true)}
-        onBlur={() => setFocused(false)}
         {...props}
-      />
-      <View
-        style={{
-          height: 2,
-          backgroundColor: underlineColor,
-          marginTop: 2,
-          borderRadius: theme.borderRadius.full,
-        }}
       />
     </View>
   );
@@ -44,12 +40,12 @@ function TextInput({ value, onChangeText, placeholder, ...props }) {
 
 const styles = StyleSheet.create({
   inputContainer: {
-    marginVertical: 12,
+    borderRadius: 5,
   },
   input: {
-    fontSize: 18,
-    paddingVertical: 8,
-    backgroundColor: "transparent",
+    height: 40, // <-- move height here
+    padding: 5,
+    borderRadius: 5,
   },
 });
 
