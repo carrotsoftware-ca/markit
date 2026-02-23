@@ -1,3 +1,4 @@
+import MarkIt from "@/src/components/test/MarkIt";
 import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import { useTheme } from "@/src/context/ThemeContext";
 import React from "react";
@@ -13,7 +14,7 @@ export default function ProjectsScreen() {
       title="Dashboard"
       subtitle="A quick look at what you have going on!"
     >
-      {/* Add any additional dashboard content here */}
+      <MarkIt />
     </AuthScreenWrapper>
   );
 }
