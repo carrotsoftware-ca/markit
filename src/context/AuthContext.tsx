@@ -43,14 +43,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
     userData.authenticatorType = type;
     setIsLoggedIn(true);
-    setUser(userData);
-    router.replace("/");
+    try {
+      await upsertUser(userData);
+      setUser(userData);
+      router.replace("/");
+    } catch (error) {
+      console.log(error);
+    }
   };
 
-  const logout = async (type = "google") => {
-    console.log(user);
+  const logout = async (type = null) => {
     const auth = authenticators[type];
     if (auth && auth.logout) await auth.logout();
+    await getAuth().signOut();
     setIsLoggedIn(false);
     setUser(null);
     router.replace("/login");
