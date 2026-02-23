@@ -5,7 +5,7 @@ import { ProjectsProvider } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
-import { StatusBar, Text } from "react-native";
+import { StatusBar } from "react-native";
 
 export default function Layout() {
   const { isReady, isLoggedIn } = useAuth();
@@ -18,9 +18,7 @@ export default function Layout() {
   }
   return (
     <ProjectsProvider>
-
       <JobsProvider>
-
         <>
           <StatusBar
             backgroundColor={theme.colors.midnightBlue}
@@ -34,6 +32,7 @@ export default function Layout() {
           <Tabs
             screenOptions={{
               animation: "none",
+              unmountOnBlur: true,
               headerShown: false,
               tabBarStyle: {
                 backgroundColor: isDark

@@ -1,3 +1,3 @@
-export async function watchProjects() {
-  // TODO: Implement watchProjects logic
+export function watchProjects() {
+  return () => console.log("calling the clean up");
 }
