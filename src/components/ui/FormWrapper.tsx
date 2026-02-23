@@ -1,18 +1,12 @@
-import React from "react";
 import { useTheme } from "@/src/context/ThemeContext";
-import { StyleSheet, View } from "react-native";
+import React from "react";
+import { StyleSheet } from "react-native";
+import { KeyboardAvoidingView } from "react-native-keyboard-controller";
 
-import { KeyboardAwareScrollView } from "react-native-keyboard-controller";
-import TextInput from "../forms/inputs/TextInput";
+const FormWrapper = ({ children, style, ...props }) => {
+  const { isDark } = useTheme();
 
-const FormWrapper = ({ children }) => {
-  const {isDark} = useTheme();
-
-  return( 
-    <KeyboardAwareScrollView style={styles.container}>
-      {children}
-    </KeyboardAwareScrollView>
-  )
+  return <KeyboardAvoidingView style={style}>{children}</KeyboardAvoidingView>;
 };
 
 const styles = StyleSheet.create({
@@ -21,4 +15,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default FormWrapper
+export default FormWrapper;
