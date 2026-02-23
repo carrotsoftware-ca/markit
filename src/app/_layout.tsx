@@ -7,6 +7,7 @@ import { Stack } from "expo-router";
 import { Toaster } from "sonner-native";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 LogBox.ignoreLogs([
   "Sending `onAnimatedValueUpdate` with no listeners registered.",
@@ -43,17 +44,20 @@ export default function RootLayout() {
   }
 
   return (
-    <KeyboardProvider>
-      <ThemeProvider>
-        <AuthProvider>
-          <Stack
-            screenOptions={{
-              headerShown: false,
-            }}
-          />
-          <Toaster />
-        </AuthProvider>
-      </ThemeProvider>
-    </KeyboardProvider>
+    <GestureHandlerRootView style={{flex:1}}>
+
+      <KeyboardProvider>
+        <ThemeProvider>
+          <AuthProvider>
+            <Stack
+              screenOptions={{
+                headerShown: false,
+              }}
+            />
+            <Toaster />
+          </AuthProvider>
+        </ThemeProvider>
+      </KeyboardProvider>
+    </GestureHandlerRootView>
   );
 }
