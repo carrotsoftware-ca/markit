@@ -1,4 +1,4 @@
-import { lightTheme, darkTheme, Theme } from "@types/theme";
+import { darkTheme, lightTheme, Theme } from "@types/theme";
 import React, { createContext, ReactNode, useContext, useState } from "react";
 import { useBreakpoints } from "../hooks/useBreakpoints";
 

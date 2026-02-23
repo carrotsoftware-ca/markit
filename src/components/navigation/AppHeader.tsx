@@ -24,7 +24,10 @@ export const AppHeader = ({ title, showMenuButton }: AppHeaderProps) => {
     >
       <View style={[styles.header, { backgroundColor: theme.colors.surface }]}>
         {showMenuButton && (
-          <TouchableOpacity onPress={handleToggleDrawer} style={styles.menuButton}>
+          <TouchableOpacity
+            onPress={handleToggleDrawer}
+            style={styles.menuButton}
+          >
             <Ionicons
               name="menu-outline"
               size={28}
