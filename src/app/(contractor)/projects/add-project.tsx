@@ -4,6 +4,7 @@ import FormWrapper from "@/src/components/ui/FormWrapper";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useRouter } from "expo-router";
 import React from "react";
 import { StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -11,9 +12,22 @@ import { SafeAreaView } from "react-native-safe-area-context";
 export default function AddProject() {
   const { createProject, loading } = useProjects();
   const { theme } = useTheme();
+  const router = useRouter();
 
-  const handleCreateProject = async () => {
-    await createProject();
+  const handleCreateProject = async (data) => {
+    try {
+      const id = await createProject(data);
+      if (id) {
+        router.back();
+        setTimeout(() => {
+          router.push(
+            `/(contractor)/projects/${id}?name=${data.name}&status=${"draft"}`,
+          );
+        }, 100);
+      }
+    } catch (error) {
+      console.log(error);
+    }
   };
 
   return (
