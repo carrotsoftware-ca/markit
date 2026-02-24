@@ -22,6 +22,7 @@ if (__DEV__) {
 }
 
 // Export getters for use in the app
+export const FirestoreFieldValue = firebase.firestore.FieldValue;
 export const getAuth = () => auth();
 export const getFirestore = () => firestore();
 export const getFunctions = () => functions();

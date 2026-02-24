@@ -19,6 +19,7 @@ export async function login() {
       id: user.uid,
       displayName: user.displayName || user.email || "User",
       email: user.email,
+      isNew: result.additionalUserInfo?.isNewUser ?? false,
     };
   } catch (error: any) {
     if (error.code === "auth/popup-closed-by-user") {

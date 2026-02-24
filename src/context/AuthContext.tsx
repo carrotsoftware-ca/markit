@@ -12,6 +12,8 @@ import React, {
   useState,
 } from "react";
 
+import { getUser, insertUser, updateUser, upsertUser } from "@services/user";
+
 const AuthContext = createContext<AuthStateType>({
   isLoggedIn: false,
   isReady: false,
@@ -39,14 +41,22 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // Login was cancelled or failed, do not proceed
       return;
     }
-    setIsLoggedIn(true);
-    setUser(userData);
-    router.replace("/");
+    userData.authenticatorType = type;
+    try {
+      await upsertUser(userData);
+    } catch (error) {
+      console.log(error)
+    }finally{
+      setIsLoggedIn(true);
+      setUser(userData);
+      router.replace("/");
+    }
   };
 
-  const logout = async (type = "google") => {
+  const logout = async (type = null) => {
     const auth = authenticators[type];
     if (auth && auth.logout) await auth.logout();
+    await getAuth().signOut();
     setIsLoggedIn(false);
     setUser(null);
     router.replace("/login");
@@ -71,7 +81,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }, []);
 
   return (
-    <AuthContext.Provider value={{ user, isReady, isLoggedIn, login, logout }}>
+    <AuthContext.Provider
+      value={{
+        user,
+        isReady,
+        isLoggedIn,
+        login,
+        logout,
+        getUser,
+        insertUser,
+        upsertUser,
+        updateUser,
+      }}
+    >
       {children}
     </AuthContext.Provider>
   );

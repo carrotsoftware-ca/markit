@@ -23,7 +23,8 @@ export async function login() {
     const displayName = [firstName, lastName].filter(Boolean).join(" ");
 
     const appleCredentials = AppleAuthProvider.credential(identityToken, nonce);
-    const { user } = await getAuth().signInWithCredential(appleCredentials);
+    const { user, additionalUserInfo } =
+      await getAuth().signInWithCredential(appleCredentials);
 
     if (!user) {
       crashlytics().log(
@@ -35,6 +36,7 @@ export async function login() {
       id: user.uid,
       displayName: displayName || user.displayName || user.email || "User",
       email: user.email,
+      isNew: additionalUserInfo?.isNewUser ?? false,
     };
   } catch (error: any) {
     if (error.code === "ERR_REQUEST_CANCELED") {
@@ -46,5 +48,5 @@ export async function login() {
 }
 
 export async function logout() {
-  // TODO: Implement Apple sign-out logic
+  // keeping place to be consistent.
 }

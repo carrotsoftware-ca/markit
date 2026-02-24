@@ -20,7 +20,7 @@ export async function login() {
       throw new Error("Google Sign-In did not return an idToken");
     }
     const googleCredential = await GoogleAuthProvider.credential(idToken);
-    const { user: firebaseUser } =
+    const { user: firebaseUser, additionalUserInfo } =
       await getAuth().signInWithCredential(googleCredential);
 
     const displayName =
@@ -36,6 +36,7 @@ export async function login() {
       id: firebaseUser.uid,
       displayName,
       email: firebaseUser.email,
+      isNew: additionalUserInfo?.isNewUser ?? false,
     };
   } catch (error) {
     console.log(error);
