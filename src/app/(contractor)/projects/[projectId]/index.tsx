@@ -6,6 +6,7 @@ import {
   UploadedFiles,
 } from "@/src/components/ui/projects";
 import { useProjects } from "@/src/context/ProjectsContext";
+import { useTheme } from "@/src/context/ThemeContext";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
 import { pickMedia } from "@/src/hooks/useMediaPicker";
 import { deleteProjectFile, uploadProjectFile } from "@/src/services/projects";
@@ -17,6 +18,7 @@ import { Pressable, ScrollView } from "react-native";
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
   const { deleteProject, watchProject, project } = useProjects();
+  const { theme } = useTheme();
   const router = useRouter();
   const dialog = useConfirmDialog();
 
@@ -55,7 +57,7 @@ export default function ProjectDetailsScreen() {
       <DetailsWrapper>
         <DetailsWrapper.NavAction>
           <Pressable onPress={() => router.back()}>
-            <MaterialCommunityIcons name="arrow-left" size={24} />
+            <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text.primary} />
           </Pressable>
         </DetailsWrapper.NavAction>
         <DetailsWrapper.Title>{name}</DetailsWrapper.Title>
