@@ -10,10 +10,10 @@ export default function QuoteScreen() {
   return (
     <DetailsWrapper
       onBack={() => router.back()}
-      onDelete={async() => {
+      onDelete={async () => {
         try {
           await deleteProject(projectId);
-          router.back();
+          router.replace("/(contractor)/projects");
         } catch (error) {
           console.log(error);
         }
