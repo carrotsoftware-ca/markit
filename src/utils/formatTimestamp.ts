@@ -1,8 +1,8 @@
-import { formatDistanceToNow, differenceInDays, format } from "date-fns";
+import { differenceInDays, format, formatDistanceToNow } from "date-fns";
 
 /**
- * Formats a Firestore Timestamp or Date into a relative string if recent,
- * or a formatted date string if older than 7 days.
+ * Formats a Firestore Timestamp, Date, or date string into a relative string
+ * if recent (within 7 days and has time precision), or a formatted date otherwise.
  *
  * Examples:
  *   "just now"
@@ -14,16 +14,30 @@ import { formatDistanceToNow, differenceInDays, format } from "date-fns";
 export function formatTimestamp(value: any): string {
   if (!value) return "";
 
-  // Handle Firestore Timestamp
-  const date: Date = value?.toDate ? value.toDate() : new Date(value);
+  // If it's already a plain date string with no time (e.g. "Feb 24, 2026"), return as-is
+  if (typeof value === "string" && !/T|Z|\d{2}:\d{2}/.test(value)) {
+    return value;
+  }
+
+  let date: Date;
+
+  if (value?.toDate) {
+    // Firestore Timestamp with toDate() method
+    date = value.toDate();
+  } else if (value?.seconds) {
+    // Plain Firestore Timestamp-like object { seconds, nanoseconds }
+    date = new Date(value.seconds * 1000);
+  } else {
+    date = new Date(value);
+  }
 
   if (isNaN(date.getTime())) return "";
 
   const daysDiff = differenceInDays(new Date(), date);
 
   if (daysDiff >= 7) {
-    return format(date, "MMM d, yyyy"); // e.g. "Feb 12, 2026"
+    return format(date, "MMM d, yyyy");
   }
 
-  return formatDistanceToNow(date, { addSuffix: true }); // e.g. "3 minutes ago"
+  return formatDistanceToNow(date, { addSuffix: true });
 }

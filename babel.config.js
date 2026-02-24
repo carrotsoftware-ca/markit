@@ -12,6 +12,7 @@ module.exports = function (api) {
             "@components/ui": "./src/components/ui",
             "@services": "./src/services",
             "@types": "./src/types",
+            "@utils": "./src/utils"
           },
         },
       ],
