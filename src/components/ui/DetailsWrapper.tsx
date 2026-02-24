@@ -102,5 +102,5 @@ const styles = StyleSheet.create({
   headerText: { flex: 1, marginLeft: 8 },
   title: { fontSize: 20, fontWeight: "bold" },
   subtitle: { fontSize: 14, color: "#888" },
-  content: { flex: 1, padding: 16 },
+  content: { flex: 1, paddingHorizontal: 16, paddingTop: 16 },
 });
