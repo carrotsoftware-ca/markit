@@ -7,20 +7,25 @@ import {
 } from "@/src/components/ui/projects";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
-import { deleteProjectFile, uploadProjectFile } from "@/src/services/projects";
 import { pickMedia } from "@/src/hooks/useMediaPicker";
+import { deleteProjectFile, uploadProjectFile } from "@/src/services/projects";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import { useLocalSearchParams, useRouter } from "expo-router";
-import React from "react";
+import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
+import React, { useCallback } from "react";
 import { Pressable, ScrollView } from "react-native";
 
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
-  const { deleteProject, projects } = useProjects();
+  const { deleteProject, watchProject, project } = useProjects();
   const router = useRouter();
   const dialog = useConfirmDialog();
 
-  const project = projects.find((p) => p.id === projectId);
+  useFocusEffect(
+    useCallback(() => {
+      const unsubscribe = watchProject(projectId as string);
+      return () => unsubscribe();
+    }, [projectId]),
+  );
 
   const handleUpload = async () => {
     const media = await pickMedia();
