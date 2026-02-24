@@ -10,7 +10,7 @@ export default function QuoteScreen() {
   return (
     <DetailsWrapper
       onBack={() => router.back()}
-      onDelete={async () => {
+      onDelete={async() => {
         try {
           await deleteProject(projectId);
           router.back();

@@ -45,10 +45,10 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setIsLoggedIn(true);
     try {
       await upsertUser(userData);
+    } catch (error) {
       setUser(userData);
       router.replace("/");
-    } catch (error) {
-      console.log(error);
+      console.log(error)
     }
   };
 
