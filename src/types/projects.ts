@@ -1,8 +1,13 @@
 export interface ProjectFile {
   id: string;
+  status: "uploading" | "done" | "error";
   filename: string;
   size: string;
   date: string;
+  progress?: number;
+  url?: string;
+  storagePath?: string;
+  mimeType?: string;
 }
 
 export interface Project {
