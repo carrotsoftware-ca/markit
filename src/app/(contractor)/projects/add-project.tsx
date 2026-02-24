@@ -1,6 +1,5 @@
 import NewProjectForm from "@/src/components/forms/NewProjectForm";
 import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
-import FormWrapper from "@/src/components/ui/FormWrapper";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
@@ -19,7 +18,8 @@ export default function AddProject() {
       const id = await createProject(data);
       if (id) {
         router.dismissTo(
-          `/(contractor)/projects/${id}?name=${data.name}&status=${"draft"}`);
+          `/(contractor)/projects/${id}?name=${data.name}&status=${"draft"}`,
+        );
       }
     } catch (error) {
       console.log(error);
@@ -36,9 +36,8 @@ export default function AddProject() {
             color={theme.colors.safetyOrange}
             style={styles.watermark}
           />
-          <FormWrapper style={{ flex: 1 }}>
-            <NewProjectForm onSubmit={handleCreateProject} />
-          </FormWrapper>
+
+          <NewProjectForm onSubmit={handleCreateProject} />
         </View>
       </SafeAreaView>
     </AuthScreenWrapper>

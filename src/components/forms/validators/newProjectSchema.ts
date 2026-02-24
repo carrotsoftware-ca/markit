@@ -9,6 +9,16 @@ const newProjectSchema = yup.object().shape({
     .string()
     .required("Description is required")
     .max(200, "Max 200 characters"),
+  client_email: yup
+    .string()
+    .email("Must be a valid email")
+    .required("Client email is required"),
+  emailNotifications: yup
+    .boolean()
+    .required(),
+  notifications: yup
+    .boolean()
+    .required(),
 });
 
 export default newProjectSchema;
