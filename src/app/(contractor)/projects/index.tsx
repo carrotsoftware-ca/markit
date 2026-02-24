@@ -40,7 +40,11 @@ export default function ProjectsScreen() {
               description={item.description}
               status={item.status}
               statusColor={item.statusColor}
-              timestamp={item.timestamp}
+              timestamp={
+                item.createdAt?.toDate
+                  ? item.createdAt.toDate().toLocaleDateString()
+                  : item.createdAt
+              }
             />
           </Link>
         ))}
