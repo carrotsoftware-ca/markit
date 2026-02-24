@@ -1,4 +1,4 @@
-import { getFirestore } from "@/src/services/firebase";
+import { getFirestore, FirestoreFieldValue } from "@/src/services/firebase";
 import { CreateProjectInput } from "@/src/types";
 import firestore from "@react-native-firebase/firestore";
 
@@ -10,8 +10,8 @@ export async function createProject(
     .add({
       ...project,
       status: 'draft',
-      createdAt: firestore.FieldValue.serverTimestamp(),
-      updatedAt: firestore.FieldValue.serverTimestamp(),
+      createdAt: FirestoreFieldValue.serverTimestamp(),
+      updatedAt: FirestoreFieldValue.serverTimestamp(),
     });
   console.log(projectRef.id);
   return projectRef.id;
