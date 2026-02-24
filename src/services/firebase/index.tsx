@@ -18,6 +18,7 @@ if (__DEV__) {
   auth().useEmulator(`http://${host}:9099`);
   functions().useEmulator(host, 5001);
   firestore().useEmulator(host, 8080);
+  // Storage emulator disabled — use production so uploaded files are reachable
   storage().useEmulator(host, 9199);
 }
 

@@ -1,5 +1,7 @@
-import React, { useState } from "react";
+import * as FileSystem from "expo-file-system/legacy";
+import React, { useEffect, useState } from "react";
 import {
+  ActivityIndicator,
   Text as RNText,
   StyleSheet,
   TextInput,
@@ -22,11 +24,57 @@ import {
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
-const MarkIt = () => {
+interface MarkItProps {
+  imageUrl?: string;
+}
+
+const DEFAULT_IMAGE =
+  "https://images.unsplash.com/photo-1630699144919-681cf308ae82?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D";
+
+const MarkIt = ({ imageUrl }: MarkItProps) => {
   const { width, height } = useWindowDimensions();
-  const image = useImage(
-    `https://images.unsplash.com/photo-1630699144919-681cf308ae82?q=80&w=2670&auto=format&fit=crop&ixlib=rb-4.1.0&ixid=M3wxMjA3fDB8MHxwaG90by1wYWdlfHx8fGVufDB8fHx8fA%3D%3D`,
-  );
+
+  // useImage only works with local URIs on native — download remote URLs first
+  const [localUri, setLocalUri] = useState<string | null>(null);
+  useEffect(() => {
+    const src = imageUrl ?? DEFAULT_IMAGE;
+    if (!src.startsWith("http")) {
+      setLocalUri(src);
+      return;
+    }
+    setLocalUri(null);
+    const dest = `${FileSystem.cacheDirectory}markit_${Date.now()}.png`;
+
+    // Firebase Storage emulator URLs have the object path as a URL segment
+    // (e.g. /o/projects/id/file.png) but the emulator requires the slashes
+    // in the path to be %2F-encoded (/o/projects%2Fid%2Ffile.png).
+    // Re-encode the /o/<path> portion if it isn't already encoded.
+    let downloadUrl = src;
+    const oIndex = src.indexOf("/o/");
+    if (oIndex !== -1) {
+      const beforePath = src.slice(0, oIndex + 3); // up to and including "/o/"
+      const rest = src.slice(oIndex + 3); // "projects/id/file.png?alt=media&..."
+      const qIndex = rest.indexOf("?");
+      const rawPath = qIndex !== -1 ? rest.slice(0, qIndex) : rest;
+      const query = qIndex !== -1 ? rest.slice(qIndex) : "";
+      if (rawPath.includes("/")) {
+        // encode slashes inside the object path
+        downloadUrl = beforePath + rawPath.replace(/\//g, "%2F") + query;
+      }
+    }
+
+    FileSystem.downloadAsync(downloadUrl, dest)
+      .then(({ uri, status }) => {
+        if (status >= 200 && status < 300) {
+          setLocalUri(uri);
+        } else {
+          console.warn("[MarkIt] download failed with status:", status);
+        }
+      })
+      .catch((e) => console.warn("[MarkIt] download error:", e));
+  }, [imageUrl]);
+
+  const image = useImage(localUri);
   const font = useFont(
     require("../../../assets/fonts/space_grotesk/SpaceGrotesk-VariableFont_wght.ttf"),
     16,
@@ -59,19 +107,31 @@ const MarkIt = () => {
       lastPixelDistance.value = Math.sqrt(dx * dx + dy * dy);
     });
 
+  // Compute how many screen pixels correspond to one intrinsic image pixel
+  // under Skia's "contain" fit, so scale is resolution-independent.
+  const getRenderScale = () => {
+    if (!image) return 1;
+    const imgW = image.width();
+    const imgH = image.height();
+    const scaleX = width / imgW;
+    const scaleY = height / imgH;
+    return Math.min(scaleX, scaleY); // "contain" uses the smaller axis
+  };
+
   const distanceText = useDerivedValue(() => {
     const dx = end.value.x - start.value.x;
     const dy = end.value.y - start.value.y;
-    const px = Math.sqrt(dx * dx + dy * dy);
+    const screenPx = Math.sqrt(dx * dx + dy * dy);
     if (scaleSV.value > 0) {
-      const inches = px * scaleSV.value;
+      // scaleSV = inches per screen pixel (computed at calibration time for this device/viewport)
+      const inches = screenPx * scaleSV.value;
       const feet = Math.floor(inches / 12);
       const remainingInches = (inches % 12).toFixed(1);
       return feet > 0
         ? `${feet}ft ${remainingInches}in`
         : `${remainingInches}in`;
     }
-    return `${px.toFixed(0)} px`;
+    return `${screenPx.toFixed(0)} px`;
   });
 
   // Calculate the center point for the label
@@ -112,9 +172,18 @@ const MarkIt = () => {
   }));
 
   return (
-    <View style={{ flex: 1 }}>
+    <View style={{ flex: 1, backgroundColor: "#000" }}>
+      {/* Show spinner while image is loading */}
+      {!image && (
+        <View style={styles.loadingOverlay}>
+          <ActivityIndicator size="large" color="#FF8800" />
+          <RNText style={{ color: "#fff", marginTop: 8, fontSize: 12 }}>
+            {imageUrl ? "Loading image..." : "No image URL"}
+          </RNText>
+        </View>
+      )}
       <GestureDetector gesture={panGesture}>
-        <Canvas style={{ width, height }}>
+        <Canvas style={{ flex: 1 }}>
           {image && (
             <Image
               image={image}
@@ -168,12 +237,18 @@ const MarkIt = () => {
                 <TouchableOpacity
                   style={styles.button}
                   onPress={() => {
-                    const px = lastPixelDistance.value;
+                    const screenPx = lastPixelDistance.value;
                     const realSize = parseFloat(refInput);
-                    if (px > 0 && realSize > 0) {
-                      const s = realSize / px;
+                    if (screenPx > 0 && realSize > 0) {
+                      // Normalize: convert screen pixels → intrinsic image pixels
+                      // so the scale is resolution-independent across platforms.
+                      const renderScale = getRenderScale();
+                      const intrinsicPx = screenPx / renderScale;
+                      const s = realSize / intrinsicPx; // inches per intrinsic pixel
+                      // Store inches-per-screen-pixel for the live distanceText worklet
+                      const screenScale = realSize / screenPx;
                       setScale(s);
-                      scaleSV.value = s;
+                      scaleSV.value = screenScale;
                       setMode("measure");
                     }
                   }}
@@ -185,7 +260,7 @@ const MarkIt = () => {
               <>
                 <RNText style={styles.panelTitle}>📐 Measuring</RNText>
                 <RNText style={styles.panelSubtitle}>
-                  Scale: {scale?.toFixed(5)} in/px
+                  Scale: {scale?.toFixed(5)} in/px (intrinsic)
                 </RNText>
                 <TouchableOpacity
                   style={[styles.button, { backgroundColor: "#555" }]}
@@ -208,6 +283,13 @@ const MarkIt = () => {
 };
 
 const styles = StyleSheet.create({
+  loadingOverlay: {
+    ...StyleSheet.absoluteFillObject,
+    backgroundColor: "#000",
+    justifyContent: "center",
+    alignItems: "center",
+    zIndex: 10,
+  },
   overlay: {
     position: "absolute",
     bottom: 32,

@@ -2,12 +2,16 @@ import { WithSkiaWeb } from "@shopify/react-native-skia/lib/module/web";
 import React from "react";
 import { StyleSheet, Text, View } from "react-native";
 
-export default function MarkItWeb() {
+interface MarkItWebProps {
+  imageUrl?: string;
+}
+
+export default function MarkItWeb({ imageUrl }: MarkItWebProps) {
   return (
     <View style={{ flex: 1 }}>
       <WithSkiaWeb
-        // Explicitly return the default export from the module
         getComponent={() => import("./index.native")}
+        componentProps={{ imageUrl }}
         fallback={
           <View style={styles.loading}>
             <Text>Loading Skia Engine...</Text>

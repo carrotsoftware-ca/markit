@@ -41,6 +41,15 @@ export default function ProjectDetailsScreen() {
     );
   };
 
+  const handleFilePress = (fileId: string) => {
+    const file = (project?.files ?? []).find((f) => f.id === fileId);
+    if (!file?.url) return;
+    router.push({
+      pathname: "/(contractor)/projects/measure",
+      params: { fileUrl: file.url },
+    });
+  };
+
   const handleFileMenu = (fileId: string) => {
     const file = (project?.files ?? []).find((f) => f.id === fileId);
     if (!file) return;
@@ -100,6 +109,7 @@ export default function ProjectDetailsScreen() {
             <UploadedFiles
               files={project?.files ?? []}
               onFileMenu={handleFileMenu}
+              onFilePress={handleFilePress}
             />
           </ScrollView>
         </DetailsWrapper.Content>

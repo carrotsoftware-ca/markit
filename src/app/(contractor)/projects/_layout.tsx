@@ -10,6 +10,8 @@ export default function Layout() {
     >
       <Stack.Screen name={"index"} />
       <Stack.Screen name={"add-project"} options={{ presentation: "modal" }} />
+      <Stack.Screen name={"[projectId]/index"} />
+      <Stack.Screen name={"measure"} options={{ presentation: "fullScreenModal" }} />
     </Stack>
   );
 }

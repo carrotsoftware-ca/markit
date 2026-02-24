@@ -14,11 +14,19 @@ interface UploadedFile {
 interface UploadedFilesProps {
   files: UploadedFile[];
   onFileMenu?: (fileId: string) => void;
+  onFilePress?: (fileId: string) => void;
+}
+
+const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
+function isImageFile(filename: string) {
+  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
+  return IMAGE_EXTENSIONS.includes(ext);
 }
 
 export default function UploadedFiles({
   files,
   onFileMenu,
+  onFilePress,
 }: UploadedFilesProps) {
   const { theme } = useTheme();
 
@@ -57,6 +65,7 @@ export default function UploadedFiles({
             size={file.size}
             date={file.date}
             status={file.status}
+            onPress={isImageFile(file.filename) && file.status === "done" ? () => onFilePress?.(file.id) : undefined}
             onMenu={() => onFileMenu?.(file.id)}
           />
         ))

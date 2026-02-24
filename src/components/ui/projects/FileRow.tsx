@@ -40,10 +40,11 @@ export interface FileRowProps {
   size: string;
   date: string;
   status?: "uploading" | "done" | "error";
+  onPress?: () => void;
   onMenu?: () => void;
 }
 
-export function FileRow({ filename, size, date, status, onMenu }: FileRowProps) {
+export function FileRow({ filename, size, date, status, onPress, onMenu }: FileRowProps) {
   const { theme } = useTheme();
   const fileType = getFileType(filename);
   const icon = getFileIcon(fileType);
@@ -75,6 +76,7 @@ export function FileRow({ filename, size, date, status, onMenu }: FileRowProps) 
         animatedStyle,
       ]}
     >
+      <Pressable style={styles.rowContent} onPress={onPress} disabled={!onPress}>
       <View style={[styles.iconCircle, { backgroundColor: icon.color + "22" }]}>
         <MaterialCommunityIcons
           name={icon.name as any}
@@ -107,6 +109,7 @@ export function FileRow({ filename, size, date, status, onMenu }: FileRowProps) 
           {size} · {status === "uploading" ? "Uploading..." : date}
         </Text>
       </View>
+      </Pressable>
       <Pressable onPress={onMenu} style={styles.menu}>
         <MaterialCommunityIcons
           name="dots-vertical"
@@ -125,6 +128,11 @@ const styles = StyleSheet.create({
     borderRadius: 10,
     padding: 12,
     marginBottom: 8,
+  },
+  rowContent: {
+    flex: 1,
+    flexDirection: "row",
+    alignItems: "center",
   },
   iconCircle: {
     width: 40,
