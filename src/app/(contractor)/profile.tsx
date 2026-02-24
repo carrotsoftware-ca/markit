@@ -1,7 +1,9 @@
-import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
+import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
 import { useAuth } from "@/src/context/AuthContext";
 import { useTheme } from "@/src/context/ThemeContext";
-import { StyleSheet, Text, View } from "react-native";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import React from "react";
+import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function Profile() {
@@ -10,24 +12,30 @@ export default function Profile() {
   const insets = useSafeAreaInsets();
 
   return (
-    <AuthScreenWrapper
-      title={user?.displayName || "Profile"}
-      subtitle="Manage your profile"
-    >
-      <View style={{ flex: 1, justifyContent: "center", alignItems: "center" }}>
-        <Text
-          style={{
-            color: theme.colors.safetyOrange,
-            fontFamily: theme.typography.fontFamily.bold,
-            fontSize: 18,
-            paddingVertical: 12,
-          }}
-          onPress={logout}
+    <DetailsWrapper>
+      <DetailsWrapper.Title>
+        {user?.displayName || "Profile"}
+      </DetailsWrapper.Title>
+      <DetailsWrapper.Subtitle>
+        {user?.email ? `Email: ${user.email}` : "Manage your profile"}
+      </DetailsWrapper.Subtitle>
+      <DetailsWrapper.HeaderAction>
+        <Pressable onPress={logout}>
+          <MaterialCommunityIcons
+            name="logout"
+            size={24}
+            color={theme.colors.safetyOrange}
+          />
+        </Pressable>
+      </DetailsWrapper.HeaderAction>
+      <DetailsWrapper.Content>
+        <View
+          style={{ flex: 1, justifyContent: "center", alignItems: "center" }}
         >
-          Logout
-        </Text>
-      </View>
-    </AuthScreenWrapper>
+          {/* Additional profile content can go here */}
+        </View>
+      </DetailsWrapper.Content>
+    </DetailsWrapper>
   );
 }
 
