@@ -1,4 +1,7 @@
-export * from "./watchProjects";
 export * from "./createProject";
-export * from "./updateProject";
 export * from "./deleteProject";
+export * from "./deleteProjectFile";
+export * from "./updateProject";
+export * from "./uploadProjectFile";
+export * from "./watchProjects";
+

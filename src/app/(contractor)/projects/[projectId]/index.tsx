@@ -7,6 +7,7 @@ import {
 } from "@/src/components/ui/projects";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
+import { deleteProjectFile, uploadProjectFile } from "@/src/services/projects";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
@@ -19,6 +20,32 @@ export default function ProjectDetailsScreen() {
   const dialog = useConfirmDialog();
 
   const project = projects.find((p) => p.id === projectId);
+
+  const handleUpload = async (media: {
+    uri: string;
+    filename: string;
+    mimeType?: string;
+    fileSize?: number;
+  }) => {
+    await uploadProjectFile(
+      projectId as string,
+      media.uri,
+      media.filename,
+      media.mimeType,
+      media.fileSize,
+    );
+  };
+
+  const handleFileMenu = (fileId: string) => {
+    const file = (project?.files ?? []).find((f) => f.id === fileId);
+    if (!file) return;
+    dialog.show({
+      title: "Delete File",
+      message: `Are you sure you want to delete "${file.filename}"?`,
+      confirmLabel: "Delete",
+      onConfirm: () => deleteProjectFile(projectId as string, file),
+    });
+  };
 
   return (
     <>
@@ -52,15 +79,18 @@ export default function ProjectDetailsScreen() {
           </Pressable>
         </DetailsWrapper.HeaderAction>
         <DetailsWrapper.Content>
-          <ScrollView showsVerticalScrollIndicator={false}>
+          <ScrollView
+            showsVerticalScrollIndicator={false}
+            contentContainerStyle={{ paddingBottom: 32 }}
+          >
             <ProjectDescription
               description={project?.description}
               client_email={project?.client_email}
             />
-            <ProjectAssets onUpload={() => {}} />
+            <ProjectAssets onUpload={handleUpload} />
             <UploadedFiles
               files={project?.files ?? []}
-              onFileMenu={(fileId) => console.log("menu:", fileId)}
+              onFileMenu={handleFileMenu}
             />
           </ScrollView>
         </DetailsWrapper.Content>
