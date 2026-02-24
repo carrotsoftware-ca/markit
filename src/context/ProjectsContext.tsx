@@ -1,5 +1,5 @@
 import { useAuth } from "@/src/context/AuthContext";
-import { CreateProjectInput } from "@/src/types";
+import { CreateProjectInput, Project } from "@/src/types";
 import {
   createProject,
   deleteProject,
@@ -11,8 +11,8 @@ import React, { createContext, useContext } from "react";
 
 interface ProjectsContextType {
   loading: boolean;
-  projects: any[];
-  project: any | null;
+  projects: Project[];
+  project: Project | null;
   setLoading: (loading: boolean) => void;
   createProject: (data: Omit<CreateProjectInput, "ownerId">) => Promise<string>;
   updateProject: typeof updateProject;
@@ -28,8 +28,8 @@ const ProjectsContext = createContext<ProjectsContextType | undefined>(
 export const ProjectsProvider = ({ children }) => {
   const { user } = useAuth();
   const [loading, setLoading] = React.useState(false);
-  const [projects, setProjects] = React.useState([]);
-  const [project, setProject] = React.useState<any>(null);
+  const [projects, setProjects] = React.useState<Project[]>([]);
+  const [project, setProject] = React.useState<Project | null>(null);
 
   const handleCreateProject = async (
     data: Omit<CreateProjectInput, "ownerId">,

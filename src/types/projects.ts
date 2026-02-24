@@ -32,6 +32,11 @@ export type UpdateProjectInput = Partial<
   Omit<Project, "id" | "createdAt" | "ownerId">
 >;
 export type WatchProjectsFn = (
-  setProjects: (projects: any[]) => void,
+  setProjects: (projects: Project[]) => void,
   ownerId: string,
+) => () => void;
+
+export type WatchProjectFn = (
+  projectId: string,
+  setProject: (project: Project) => void,
 ) => () => void;
