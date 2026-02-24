@@ -11,7 +11,7 @@ export default ({ config }) => ({
     newArchEnabled: true,
     assetBundlePatterns: [
       "assets/fonts/**",
-      "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/**"
+      "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/**",
     ],
     ios: {
       bundleIdentifier: "com.carrotsoftware.markit",
@@ -22,12 +22,16 @@ export default ({ config }) => ({
         "applinks:markitquote.com",
         "applinks:www.markitquote.com",
         "applinks:markitquote.com",
-        "applinks:www.markitquote.com"
+        "applinks:www.markitquote.com",
       ],
       appleTeamId: "9CTMYS84XH",
       infoPlist: {
-        ITSAppUsesNonExemptEncryption: false
-      }
+        ITSAppUsesNonExemptEncryption: false,
+        NSPhotoLibraryUsageDescription:
+          "Allow markit to access your photo library to upload images and videos to your projects.",
+        NSMicrophoneUsageDescription:
+          "Allow markit to access your microphone for video uploads.",
+      },
     },
     android: {
       googleServicesFile: "./src/services/firebase/google-services.json",
@@ -35,23 +39,19 @@ export default ({ config }) => ({
         backgroundColor: "#E6F4FE",
         foregroundImage: "./assets/images/android-icon-foreground.png",
         backgroundImage: "./assets/images/android-icon-background.png",
-        monochromeImage: "./assets/images/android-icon-monochrome.png"
+        monochromeImage: "./assets/images/android-icon-monochrome.png",
       },
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
-      package: "com.carrotsoftware.markit"
+      package: "com.carrotsoftware.markit",
     },
     web: {
       output: "static",
-      favicon: "./assets/icons/favicon.png"
+      favicon: "./assets/icons/favicon.png",
     },
     plugins: [
-      [
-        "@react-native-google-signin/google-signin"
-      ],
-      [
-        "expo-apple-authentication"
-      ],
+      ["@react-native-google-signin/google-signin"],
+      ["expo-apple-authentication"],
       "@react-native-firebase/app",
       "@react-native-firebase/auth",
       "@react-native-firebase/crashlytics",
@@ -60,13 +60,18 @@ export default ({ config }) => ({
         {
           ios: {
             useFrameworks: "static",
-            forceStaticLinking: [
-              "RNFBApp",
-              "RNFBAuth",
-              "RNFBCrashlytics"
-            ]
-          }
-        }
+            forceStaticLinking: ["RNFBApp", "RNFBAuth", "RNFBCrashlytics"],
+          },
+        },
+      ],
+      [
+        "expo-image-picker",
+        {
+          photosPermission:
+            "Allow markit to access your photo library to upload images and videos to your projects.",
+          microphonePermission:
+            "Allow markit to access your microphone for video uploads.",
+        },
       ],
       "expo-router",
       [
@@ -76,21 +81,21 @@ export default ({ config }) => ({
           resizeMode: "contain",
           backgroundColor: "#111727",
           dark: {
-            backgroundColor: "#000000"
-          }
-        }
+            backgroundColor: "#000000",
+          },
+        },
       ],
-      "@react-native-google-signin/google-signin"
+      "@react-native-google-signin/google-signin",
     ],
     experiments: {
       typedRoutes: true,
-      reactCompiler: true
+      reactCompiler: true,
     },
     extra: {
       router: {},
       eas: {
-        projectId: "45891199-d9b9-4bf0-9108-8042dcb73e10"
-      }
-    }
-  }
+        projectId: "45891199-d9b9-4bf0-9108-8042dcb73e10",
+      },
+    },
+  },
 });
