@@ -18,9 +18,8 @@ export default function AddProject() {
     try {
       const id = await createProject(data);
       if (id) {
-          router.push(
-            `/(contractor)/projects/${id}?name=${data.name}&status=${"draft"}`,
-          );
+        router.dismissTo(
+          `/(contractor)/projects/${id}?name=${data.name}&status=${"draft"}`);
       }
     } catch (error) {
       console.log(error);
