@@ -4,6 +4,7 @@ import LargeCard from "@/src/components/ui/cards/LargeCard";
 import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
+import { formatTimestamp } from "@/src/utils/formatTimestamp";
 import { Link, useFocusEffect, useRouter } from "expo-router";
 import React, { useCallback } from "react";
 import { ScrollView, StyleSheet } from "react-native";
@@ -40,11 +41,7 @@ export default function ProjectsScreen() {
               description={item.description}
               status={item.status}
               statusColor={item.statusColor}
-              timestamp={
-                item.createdAt?.toDate
-                  ? item.createdAt.toDate().toLocaleDateString()
-                  : item.createdAt
-              }
+              timestamp={formatTimestamp(item.createdAt)}
             />
           </Link>
         ))}
