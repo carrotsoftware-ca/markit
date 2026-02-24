@@ -20,11 +20,7 @@ export default function Layout() {
         <>
           <StatusBar
             backgroundColor={theme.colors.midnightBlue}
-            barStyle={
-              theme.colors.background === "#FFFFFF"
-                ? "dark-content"
-                : "light-content"
-            }
+            barStyle={isDark ? "light-content" : "dark-content"}
           />
           <AppHeader />
           <Tabs
