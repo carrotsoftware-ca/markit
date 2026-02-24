@@ -6,6 +6,8 @@ export interface Project {
   createdAt?: string;
   updatedAt?: string;
   ownerId: string;
+  emailNotifications: boolean;
+  notifications: boolean;
 }
 
 export type CreateProjectInput = Omit<
