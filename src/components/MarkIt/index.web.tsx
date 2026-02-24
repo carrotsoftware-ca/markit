@@ -12,6 +12,7 @@ export default function MarkItWeb({ imageUrl }: MarkItWebProps) {
       <WithSkiaWeb
         getComponent={() => import("./index.native")}
         componentProps={{ imageUrl }}
+        opts={{ locateFile: () => "/canvaskit.wasm" }}
         fallback={
           <View style={styles.loading}>
             <Text>Loading Skia Engine...</Text>

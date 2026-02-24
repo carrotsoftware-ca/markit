@@ -2,6 +2,7 @@ import * as FileSystem from "expo-file-system/legacy";
 import React, { useEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Platform,
   Text as RNText,
   StyleSheet,
   TextInput,
@@ -34,34 +35,38 @@ const DEFAULT_IMAGE =
 const MarkIt = ({ imageUrl }: MarkItProps) => {
   const { width, height } = useWindowDimensions();
 
-  // useImage only works with local URIs on native — download remote URLs first
+  // useImage only works with local URIs on native — download remote URLs first.
+  // On web, useImage can load HTTP URLs directly.
   const [localUri, setLocalUri] = useState<string | null>(null);
   useEffect(() => {
     const src = imageUrl ?? DEFAULT_IMAGE;
+
+    // Firebase Storage URLs need slashes in the object path encoded as %2F
+    // (e.g. /o/projects/id/file.png → /o/projects%2Fid%2Ffile.png)
+    const encodeStoragePath = (url: string): string => {
+      const oIndex = url.indexOf("/o/");
+      if (oIndex === -1) return url;
+      const beforePath = url.slice(0, oIndex + 3);
+      const rest = url.slice(oIndex + 3);
+      const qIndex = rest.indexOf("?");
+      const rawPath = qIndex !== -1 ? rest.slice(0, qIndex) : rest;
+      const query = qIndex !== -1 ? rest.slice(qIndex) : "";
+      if (!rawPath.includes("/")) return url;
+      return beforePath + rawPath.replace(/\//g, "%2F") + query;
+    };
+
+    if (Platform.OS === "web") {
+      setLocalUri(encodeStoragePath(src));
+      return;
+    }
+
     if (!src.startsWith("http")) {
       setLocalUri(src);
       return;
     }
     setLocalUri(null);
     const dest = `${FileSystem.cacheDirectory}markit_${Date.now()}.png`;
-
-    // Firebase Storage emulator URLs have the object path as a URL segment
-    // (e.g. /o/projects/id/file.png) but the emulator requires the slashes
-    // in the path to be %2F-encoded (/o/projects%2Fid%2Ffile.png).
-    // Re-encode the /o/<path> portion if it isn't already encoded.
-    let downloadUrl = src;
-    const oIndex = src.indexOf("/o/");
-    if (oIndex !== -1) {
-      const beforePath = src.slice(0, oIndex + 3); // up to and including "/o/"
-      const rest = src.slice(oIndex + 3); // "projects/id/file.png?alt=media&..."
-      const qIndex = rest.indexOf("?");
-      const rawPath = qIndex !== -1 ? rest.slice(0, qIndex) : rest;
-      const query = qIndex !== -1 ? rest.slice(qIndex) : "";
-      if (rawPath.includes("/")) {
-        // encode slashes inside the object path
-        downloadUrl = beforePath + rawPath.replace(/\//g, "%2F") + query;
-      }
-    }
+    const downloadUrl = encodeStoragePath(src);
 
     FileSystem.downloadAsync(downloadUrl, dest)
       .then(({ uri, status }) => {
