@@ -1,7 +1,14 @@
 import { useTheme } from "@/src/context/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
-import React from "react";
+import React, { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
+import Animated, {
+  useAnimatedStyle,
+  useSharedValue,
+  withRepeat,
+  withSequence,
+  withTiming,
+} from "react-native-reanimated";
 
 type FileType = "image" | "pdf" | "zip" | "other";
 
@@ -32,19 +39,40 @@ export interface FileRowProps {
   filename: string;
   size: string;
   date: string;
+  status?: "uploading" | "done" | "error";
   onMenu?: () => void;
 }
 
-export function FileRow({ filename, size, date, onMenu }: FileRowProps) {
+export function FileRow({ filename, size, date, status, onMenu }: FileRowProps) {
   const { theme } = useTheme();
   const fileType = getFileType(filename);
   const icon = getFileIcon(fileType);
 
+  const opacity = useSharedValue(1);
+
+  useEffect(() => {
+    if (status === "uploading") {
+      opacity.value = withRepeat(
+        withSequence(
+          withTiming(0.35, { duration: 600 }),
+          withTiming(1, { duration: 600 }),
+        ),
+        -1,
+        false,
+      );
+    } else {
+      opacity.value = withTiming(1, { duration: 200 });
+    }
+  }, [status]);
+
+  const animatedStyle = useAnimatedStyle(() => ({ opacity: opacity.value }));
+
   return (
-    <View
+    <Animated.View
       style={[
         styles.row,
         { backgroundColor: theme.colors.surface ?? "#1e1e1e" },
+        animatedStyle,
       ]}
     >
       <View style={[styles.iconCircle, { backgroundColor: icon.color + "22" }]}>
@@ -76,7 +104,7 @@ export function FileRow({ filename, size, date, onMenu }: FileRowProps) {
             },
           ]}
         >
-          {size} · {date}
+          {size} · {status === "uploading" ? "Uploading..." : date}
         </Text>
       </View>
       <Pressable onPress={onMenu} style={styles.menu}>
@@ -86,7 +114,7 @@ export function FileRow({ filename, size, date, onMenu }: FileRowProps) {
           color={theme.colors.text.secondary}
         />
       </Pressable>
-    </View>
+    </Animated.View>
   );
 }
 

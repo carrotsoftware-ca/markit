@@ -8,6 +8,7 @@ interface UploadedFile {
   filename: string;
   size: string;
   date: string;
+  status?: "uploading" | "done" | "error";
 }
 
 interface UploadedFilesProps {
@@ -55,6 +56,7 @@ export default function UploadedFiles({
             filename={file.filename}
             size={file.size}
             date={file.date}
+            status={file.status}
             onMenu={() => onFileMenu?.(file.id)}
           />
         ))
