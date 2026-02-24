@@ -15,7 +15,7 @@ interface ProjectsContextType {
   createProject: (data: Omit<CreateProjectInput, "ownerId">) => Promise<string>;
   updateProject: typeof updateProject;
   deleteProject: typeof deleteProject;
-  watchProjects: typeof watchProjects;
+  watchProjects: () => () => void; // wrapped version, no args needed
 }
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(
@@ -34,6 +34,10 @@ export const ProjectsProvider = ({ children }) => {
     const projectId = await createProject({ ...data, ownerId: user.id });
     return projectId;
   };
+  const handleWatchedProjects = () => {
+    if (!user?.id) throw new Error("User not authenticated");
+    return watchProjects(setProjects, user.id);
+  };
 
   // Note: createdAt and updatedAt are set by the service layer using server timestamps
 
@@ -47,7 +51,7 @@ export const ProjectsProvider = ({ children }) => {
         createProject: handleCreateProject,
         updateProject,
         deleteProject,
-        watchProjects,
+        watchProjects: handleWatchedProjects,
       }}
     >
       {children}

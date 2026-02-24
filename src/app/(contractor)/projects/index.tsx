@@ -1,6 +1,7 @@
 import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import FloatingActionButton from "@/src/components/ui/buttons/FloatingActionButton";
 import LargeCard from "@/src/components/ui/cards/LargeCard";
+import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { Link, useFocusEffect, useRouter } from "expo-router";
@@ -10,12 +11,13 @@ import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ProjectsScreen() {
   const { theme } = useTheme();
+  const { user } = useAuth();
   const { watchProjects, setProjects, projects } = useProjects();
   const insets = useSafeAreaInsets();
   const router = useRouter();
   useFocusEffect(
     useCallback(() => {
-      const unsubscribe = watchProjects(setProjects);
+      const unsubscribe = watchProjects();
       return () => unsubscribe();
     }, []),
   );
