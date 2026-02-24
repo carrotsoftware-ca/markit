@@ -62,7 +62,7 @@ export default function ProjectAssets({ onUpload }: ProjectAssetsProps) {
             },
           ]}
         >
-          Images, PDF or Zip files
+          Images, and Videos
         </Text>
       </Pressable>
     </View>

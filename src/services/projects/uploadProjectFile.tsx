@@ -17,7 +17,35 @@ export async function uploadProjectFile(
 ): Promise<void> {
   const storagePath = `projects/${projectId}/${Date.now()}_${filename}`;
   const ref = getStorage().ref(storagePath);
+  const db = getFirestore();
+  const projectRef = db.collection("projects").doc(projectId);
 
+  // Optimistic write — shows the row immediately with "uploading" pulse
+  const optimisticFile: ProjectFile = {
+    id: storagePath,
+    filename,
+    size: fileSize ? `${(fileSize / 1024).toFixed(0)} KB` : "—",
+    date: new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    status: "uploading",
+    url: "",
+    storagePath,
+    ...(mimeType !== undefined && { mimeType }),
+  };
+
+  const snapBefore = await projectRef.get();
+  const existingBefore: ProjectFile[] = (snapBefore.data()?.files ?? []).filter(
+    (f: any) => f && f.id && f.filename,
+  );
+  await projectRef.set(
+    { files: [...existingBefore, optimisticFile].map(stripUndefined) },
+    { merge: true },
+  );
+
+  // Do the actual upload
   if (Platform.OS === "web") {
     const response = await fetch(localUri);
     const blob = await response.blob();
@@ -28,27 +56,15 @@ export async function uploadProjectFile(
 
   const url = await ref.getDownloadURL();
 
-  const file: ProjectFile = {
-    id: storagePath,
-    filename,
-    size: fileSize ? `${(fileSize / 1024).toFixed(0)} KB` : "—",
-    date: new Date().toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    }),
-    status: "done",
-    url,
-    storagePath,
-    ...(mimeType !== undefined && { mimeType }),
-  };
-
-  const db = getFirestore();
-  const ref2 = db.collection("projects").doc(projectId);
-  const snap = await ref2.get();
-  const existing: ProjectFile[] = (snap.data()?.files ?? []).filter(
+  // Replace the optimistic entry with the completed file
+  const snapAfter = await projectRef.get();
+  const existingAfter: ProjectFile[] = (snapAfter.data()?.files ?? []).filter(
     (f: any) => f && f.id && f.filename,
   );
-  const files = [...existing, file].map(stripUndefined);
-  await ref2.set({ files }, { merge: true });
+  const updatedFiles = existingAfter.map((f) =>
+    f.id === storagePath
+      ? stripUndefined({ ...f, status: "done" as const, url })
+      : f,
+  );
+  await projectRef.set({ files: updatedFiles }, { merge: true });
 }
