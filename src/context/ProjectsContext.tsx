@@ -1,21 +1,24 @@
 import { useAuth } from "@/src/context/AuthContext";
-import { CreateProjectInput } from "@/src/types";
+import { CreateProjectInput, Project } from "@/src/types";
 import {
   createProject,
   deleteProject,
   updateProject,
+  watchProject,
   watchProjects,
 } from "@services/projects";
 import React, { createContext, useContext } from "react";
 
 interface ProjectsContextType {
   loading: boolean;
-  projects: any[];
+  projects: Project[];
+  project: Project | null;
   setLoading: (loading: boolean) => void;
   createProject: (data: Omit<CreateProjectInput, "ownerId">) => Promise<string>;
   updateProject: typeof updateProject;
   deleteProject: typeof deleteProject;
-  watchProjects: () => () => void; // wrapped version, no args needed
+  watchProjects: () => () => void;
+  watchProject: (projectId: string) => () => void;
 }
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(
@@ -25,7 +28,8 @@ const ProjectsContext = createContext<ProjectsContextType | undefined>(
 export const ProjectsProvider = ({ children }) => {
   const { user } = useAuth();
   const [loading, setLoading] = React.useState(false);
-  const [projects, setProjects] = React.useState([]);
+  const [projects, setProjects] = React.useState<Project[]>([]);
+  const [project, setProject] = React.useState<Project | null>(null);
 
   const handleCreateProject = async (
     data: Omit<CreateProjectInput, "ownerId">,
@@ -38,6 +42,9 @@ export const ProjectsProvider = ({ children }) => {
     if (!user?.id) throw new Error("User not authenticated");
     return watchProjects(setProjects, user.id);
   };
+  const handleWatchProject = (projectId: string) => {
+    return watchProject(projectId, setProject);
+  };
 
   // Note: createdAt and updatedAt are set by the service layer using server timestamps
 
@@ -46,12 +53,14 @@ export const ProjectsProvider = ({ children }) => {
       value={{
         loading,
         projects,
+        project,
         setProjects,
         setLoading,
         createProject: handleCreateProject,
         updateProject,
         deleteProject,
         watchProjects: handleWatchedProjects,
+        watchProject: handleWatchProject,
       }}
     >
       {children}
