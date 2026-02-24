@@ -1,8 +1,9 @@
 import { useTheme } from "@/src/context/ThemeContext";
+import MarkitLogo from "@/src/components/ui/MarkitLogo";
 import { Ionicons } from "@expo/vector-icons";
 import { DrawerActions, useNavigation } from "@react-navigation/native";
 import React from "react";
-import { StyleSheet, Text, TouchableOpacity, View } from "react-native";
+import { StyleSheet, TouchableOpacity, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 interface AppHeaderProps {
@@ -11,7 +12,7 @@ interface AppHeaderProps {
 }
 
 export const AppHeader = ({ title, showMenuButton }: AppHeaderProps) => {
-  const { theme, isDark, toggleTheme } = useTheme();
+  const { theme, toggleTheme, isDark } = useTheme();
   const navigation = useNavigation();
 
   const handleToggleDrawer = () => {
@@ -35,32 +36,7 @@ export const AppHeader = ({ title, showMenuButton }: AppHeaderProps) => {
             />
           </TouchableOpacity>
         )}
-        <Text
-          style={[
-            styles.brand,
-            {
-              color: isDark
-                ? theme.colors.primary
-                : theme.colors.industrialBlack,
-              fontFamily: theme.typography.fontFamily.bold,
-            },
-          ]}
-        >
-          markit!
-        </Text>
-        {title && (
-          <Text
-            style={[
-              styles.title,
-              {
-                color: theme.colors.text.primary,
-                fontFamily: theme.typography.fontFamily.bold,
-              },
-            ]}
-          >
-            {title}
-          </Text>
-        )}
+        <MarkitLogo size={22} />
         <TouchableOpacity onPress={toggleTheme} style={styles.toggle}>
           <Ionicons
             name={isDark ? "sunny-outline" : "moon-outline"}
@@ -89,11 +65,6 @@ const styles = StyleSheet.create({
   menuButton: {
     padding: 4,
     marginRight: 8,
-  },
-  brand: {
-    fontSize: 22,
-    marginRight: 16,
-    letterSpacing: 0.5,
   },
   title: {
     fontSize: 20,

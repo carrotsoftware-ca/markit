@@ -1,13 +1,13 @@
-import { useEffect } from "react";
 import { useFonts } from "expo-font";
-import { LogBox, Platform } from "react-native";
-import * as SplashScreen from "expo-splash-screen";
-import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Stack } from "expo-router";
+import * as SplashScreen from "expo-splash-screen";
+import { useEffect } from "react";
+import { LogBox, Platform } from "react-native";
+import { GestureHandlerRootView } from "react-native-gesture-handler";
+import { KeyboardProvider } from "react-native-keyboard-controller";
 import { Toaster } from "sonner-native";
 import { AuthProvider } from "../context/AuthContext";
 import { ThemeProvider } from "../context/ThemeContext";
-import { GestureHandlerRootView } from "react-native-gesture-handler";
 
 LogBox.ignoreLogs([
   "Sending `onAnimatedValueUpdate` with no listeners registered.",
@@ -44,8 +44,7 @@ export default function RootLayout() {
   }
 
   return (
-    <GestureHandlerRootView style={{flex:1}}>
-
+    <GestureHandlerRootView style={{ flex: 1 }}>
       <KeyboardProvider>
         <ThemeProvider>
           <AuthProvider>
