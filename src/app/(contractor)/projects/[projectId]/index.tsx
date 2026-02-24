@@ -1,14 +1,21 @@
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
+import {
+  ProjectAssets,
+  ProjectDescription,
+  UploadedFiles,
+} from "@/src/components/ui/projects";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
-import { Pressable } from "react-native";
+import { Pressable, ScrollView } from "react-native";
 
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
-  const { deleteProject } = useProjects();
+  const { deleteProject, projects } = useProjects();
   const router = useRouter();
+
+  const project = projects.find((p) => p.id === projectId);
 
   return (
     <DetailsWrapper>
@@ -28,7 +35,6 @@ export default function ProjectDetailsScreen() {
             } catch (error) {
               console.log(error);
             }
-            // Show confirmation, then:
           }}
         >
           <MaterialCommunityIcons
@@ -39,7 +45,17 @@ export default function ProjectDetailsScreen() {
         </Pressable>
       </DetailsWrapper.HeaderAction>
       <DetailsWrapper.Content>
-        {/* Main content goes here */}
+        <ScrollView showsVerticalScrollIndicator={false}>
+          <ProjectDescription
+            description={project?.description}
+            client_email={project?.client_email}
+          />
+          <ProjectAssets onUpload={() => {}} />
+          <UploadedFiles
+            files={project?.files ?? []}
+            onFileMenu={(fileId) => console.log("menu:", fileId)}
+          />
+        </ScrollView>
       </DetailsWrapper.Content>
     </DetailsWrapper>
   );
