@@ -1,5 +1,4 @@
-import { getFirestore } from "@/src/services/firebase";
-import firestore from "@react-native-firebase/firestore";
+import { FirestoreFieldValue, getFirestore } from "@/src/services/firebase";
 import { User } from "@types";
 
 export async function upsertUser(user: User): Promise<void> {
@@ -10,7 +9,7 @@ export async function upsertUser(user: User): Promise<void> {
     .set(
       {
         ...data,
-        updatedAt: firestore.FieldValue.serverTimestamp(),
+        updatedAt: FirestoreFieldValue.serverTimestamp(),
       },
       { merge: true },
     );
