@@ -1,0 +1,96 @@
+// app.config.js
+export default ({ config }) => ({
+  expo: {
+    name: "markit",
+    slug: "markit",
+    version: "1.0.0",
+    orientation: "portrait",
+    icon: "./assets/icons/icon.png",
+    scheme: "markit",
+    userInterfaceStyle: "automatic",
+    newArchEnabled: true,
+    assetBundlePatterns: [
+      "assets/fonts/**",
+      "node_modules/@expo/vector-icons/build/vendor/react-native-vector-icons/Fonts/**"
+    ],
+    ios: {
+      bundleIdentifier: "com.carrotsoftware.markit",
+      googleServicesFile: "./src/services/firebase/GoogleService-Info.plist",
+      supportsTablet: true,
+      usesAppleSignIn: true,
+      associatedDomains: [
+        "applinks:markitquote.com",
+        "applinks:www.markitquote.com",
+        "applinks:markitquote.com",
+        "applinks:www.markitquote.com"
+      ],
+      appleTeamId: "9CTMYS84XH",
+      infoPlist: {
+        ITSAppUsesNonExemptEncryption: false
+      }
+    },
+    android: {
+      googleServicesFile: "./src/services/firebase/google-services.json",
+      adaptiveIcon: {
+        backgroundColor: "#E6F4FE",
+        foregroundImage: "./assets/images/android-icon-foreground.png",
+        backgroundImage: "./assets/images/android-icon-background.png",
+        monochromeImage: "./assets/images/android-icon-monochrome.png"
+      },
+      edgeToEdgeEnabled: true,
+      predictiveBackGestureEnabled: false,
+      package: "com.carrotsoftware.markit"
+    },
+    web: {
+      output: "static",
+      favicon: "./assets/icons/favicon.png"
+    },
+    plugins: [
+      [
+        "@react-native-google-signin/google-signin"
+      ],
+      [
+        "expo-apple-authentication"
+      ],
+      "@react-native-firebase/app",
+      "@react-native-firebase/auth",
+      "@react-native-firebase/crashlytics",
+      [
+        "expo-build-properties",
+        {
+          ios: {
+            useFrameworks: "static",
+            forceStaticLinking: [
+              "RNFBApp",
+              "RNFBAuth",
+              "RNFBCrashlytics"
+            ]
+          }
+        }
+      ],
+      "expo-router",
+      [
+        "expo-splash-screen",
+        {
+          image: "./assets/icons/icon.png",
+          resizeMode: "contain",
+          backgroundColor: "#111727",
+          dark: {
+            backgroundColor: "#000000"
+          }
+        }
+      ],
+      "@react-native-google-signin/google-signin"
+    ],
+    experiments: {
+      typedRoutes: true,
+      reactCompiler: true
+    },
+    extra: {
+      router: {},
+      eas: {
+        projectId: "45891199-d9b9-4bf0-9108-8042dcb73e10"
+      }
+    }
+  }
+});
