@@ -8,6 +8,7 @@ import {
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
 import { deleteProjectFile, uploadProjectFile } from "@/src/services/projects";
+import { pickMedia } from "@/src/hooks/useMediaPicker";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
@@ -21,12 +22,9 @@ export default function ProjectDetailsScreen() {
 
   const project = projects.find((p) => p.id === projectId);
 
-  const handleUpload = async (media: {
-    uri: string;
-    filename: string;
-    mimeType?: string;
-    fileSize?: number;
-  }) => {
+  const handleUpload = async () => {
+    const media = await pickMedia();
+    if (!media) return;
     await uploadProjectFile(
       projectId as string,
       media.uri,

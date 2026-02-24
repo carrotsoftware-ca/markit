@@ -2,6 +2,12 @@ import { getFirestore, getStorage } from "@/src/services/firebase";
 import { ProjectFile } from "@/src/types";
 import { Platform } from "react-native";
 
+function stripUndefined<T extends object>(obj: T): T {
+  return Object.fromEntries(
+    Object.entries(obj).filter(([, v]) => v !== undefined),
+  ) as T;
+}
+
 export async function uploadProjectFile(
   projectId: string,
   localUri: string,
@@ -15,7 +21,7 @@ export async function uploadProjectFile(
   if (Platform.OS === "web") {
     const response = await fetch(localUri);
     const blob = await response.blob();
-    await ref.put(blob, { contentType: mimeType });
+    await ref.put(blob, mimeType ? { contentType: mimeType } : undefined);
   } else {
     await ref.putFile(localUri);
   }
@@ -34,12 +40,15 @@ export async function uploadProjectFile(
     status: "done",
     url,
     storagePath,
-    mimeType,
+    ...(mimeType !== undefined && { mimeType }),
   };
 
   const db = getFirestore();
   const ref2 = db.collection("projects").doc(projectId);
   const snap = await ref2.get();
-  const existing: ProjectFile[] = snap.data()?.files ?? [];
-  await ref2.update({ files: [...existing, file] });
+  const existing: ProjectFile[] = (snap.data()?.files ?? []).filter(
+    (f: any) => f && f.id && f.filename,
+  );
+  const files = [...existing, file].map(stripUndefined);
+  await ref2.set({ files }, { merge: true });
 }

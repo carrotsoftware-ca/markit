@@ -18,7 +18,8 @@ function getFileIcon(type: FileType) {
   }
 }
 
-function getFileType(filename: string): FileType {
+function getFileType(filename: string | undefined): FileType {
+  if (!filename) return "other";
   const ext = filename.split(".").pop()?.toLowerCase();
   if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext ?? ""))
     return "image";
