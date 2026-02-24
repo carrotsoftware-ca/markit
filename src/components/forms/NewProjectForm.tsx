@@ -117,6 +117,7 @@ export default function NewProjectForm({ onSubmit }) {
                 value={value}
                 onChangeText={onChange}
                 onBlur={onBlur}
+                autoCapitalize={"none"}
                 placeholder="Contact of client"
                 numberOfLines={4} // optional, sets visible lines
                 error={!!error}
@@ -159,10 +160,7 @@ export default function NewProjectForm({ onSubmit }) {
             <Button title={"Exit"} onPress={handleExit} />
           </View>
           <View style={{ flex: 0.6, marginLeft: 20 }}>
-            <Button
-              title={"Create Project"}
-              onPress={() => console.log("hre")}
-            />
+            <Button title={"Create Project"} onPress={handleSubmit(onSubmit)} />
           </View>
         </View>
       </View>
