@@ -1,6 +1,6 @@
-import { useState } from "react";
-import type { SharedValue } from "react-native-reanimated";
 import type { SkImage } from "@shopify/react-native-skia";
+import { useRef, useState } from "react";
+import type { SharedValue } from "react-native-reanimated";
 
 export type CalibrationMode = "calibrate" | "measure";
 
@@ -20,9 +20,9 @@ export function useCalibration(
   width: number,
   height: number,
   zoomLevel: SharedValue<number>,
-  lastScreenPx: SharedValue<number>,  // written by useMeasureLine
-  scaleAtOne: SharedValue<number>,    // written here, read by useMeasureLine
-  lineColor: SharedValue<string>,     // written here, read by MeasureCanvas
+  lastScreenPx: SharedValue<number>, // written by useMeasureLine
+  scaleAtOne: SharedValue<number>, // written here, read by useMeasureLine
+  lineColor: SharedValue<string>, // written here, read by MeasureCanvas
   isCalibrating: SharedValue<boolean>, // written here, read by useMeasureLine
 ) {
   const [mode, setMode] = useState<CalibrationMode>("calibrate");
