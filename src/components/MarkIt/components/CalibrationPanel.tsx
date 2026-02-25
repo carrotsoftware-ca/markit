@@ -1,4 +1,5 @@
-import React, { useEffect, useState } from "react";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import React, { useEffect, useRef, useState } from "react";
 import {
   Keyboard,
   Pressable,
@@ -14,7 +15,6 @@ import Animated, {
   useSharedValue,
   withTiming,
 } from "react-native-reanimated";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import type { CalibrationMode } from "../hooks/useCalibration";
 
@@ -48,14 +48,32 @@ export function CalibrationPanel({
   const offsetY = useSharedValue(0);
   const kbOffset = useSharedValue(0);
 
+  // Ref to the panel so we can measure its on-screen position
+  const panelRef = useRef<View>(null);
+
   useEffect(() => {
     const show = Keyboard.addListener("keyboardWillShow", (e) => {
-      kbOffset.value = withTiming(-e.endCoordinates.height, { duration: e.duration ?? 250 });
+      // Measure where the panel currently sits on screen
+      panelRef.current?.measureInWindow((_x, y, _w, h) => {
+        const panelBottom = y + h;
+        const keyboardTop = e.endCoordinates.screenY;
+        const overlap = panelBottom - keyboardTop;
+        // Only push up by however much the keyboard actually covers the panel.
+        // If the panel is already above the keyboard, overlap is ≤ 0 — don't move.
+        if (overlap > 0) {
+          kbOffset.value = withTiming(-overlap - 8, {
+            duration: e.duration ?? 250,
+          });
+        }
+      });
     });
     const hide = Keyboard.addListener("keyboardWillHide", (e) => {
       kbOffset.value = withTiming(0, { duration: e.duration ?? 250 });
     });
-    return () => { show.remove(); hide.remove(); };
+    return () => {
+      show.remove();
+      hide.remove();
+    };
   }, []);
 
   const panelAnimStyle = useAnimatedStyle(() => ({
@@ -87,7 +105,10 @@ export function CalibrationPanel({
       <View style={styles.calibrateWrapper} pointerEvents="box-none">
         <View style={styles.overlay} pointerEvents="box-none">
           <GestureDetector gesture={dragGesture}>
-            <Animated.View style={[styles.panel, panelAnimStyle]}>
+            <Animated.View
+              ref={panelRef}
+              style={[styles.panel, panelAnimStyle]}
+            >
               <View style={styles.titleRow}>
                 <Text style={styles.title}>📏 Calibration</Text>
                 <MaterialCommunityIcons
@@ -99,18 +120,27 @@ export function CalibrationPanel({
               <Text style={styles.subtitle}>
                 Draw a line over a known object, then enter its real size.
               </Text>
-              <TextInput
-                style={styles.input}
-                placeholder="Size in inches (e.g. 4)"
-                placeholderTextColor="#aaa"
-                keyboardType="decimal-pad"
-                value={refInput}
-                onChangeText={onRefInputChange}
-              />
-              <TouchableOpacity
-                style={styles.button}
-                onPress={onConfirm}
-              >
+              <View style={styles.inputRow}>
+                <TextInput
+                  style={[styles.input, { flex: 1 }]}
+                  placeholder="Size in inches (e.g. 4)"
+                  placeholderTextColor="#aaa"
+                  keyboardType="decimal-pad"
+                  value={refInput}
+                  onChangeText={onRefInputChange}
+                />
+                <TouchableOpacity
+                  style={styles.dismissKey}
+                  onPress={() => Keyboard.dismiss()}
+                >
+                  <MaterialCommunityIcons
+                    name="keyboard-close"
+                    size={22}
+                    color="#fff"
+                  />
+                </TouchableOpacity>
+              </View>
+              <TouchableOpacity style={styles.button} onPress={onConfirm}>
                 <Text style={styles.buttonText}>Set Scale & Measure</Text>
               </TouchableOpacity>
             </Animated.View>
@@ -219,6 +249,11 @@ const styles = StyleSheet.create({
     color: "#ccc",
     fontSize: 14,
   },
+  inputRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+  },
   input: {
     backgroundColor: "#333",
     color: "#fff",
@@ -226,6 +261,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 12,
     paddingVertical: 10,
     fontSize: 16,
+  },
+  dismissKey: {
+    width: 40,
+    height: 40,
+    borderRadius: 8,
+    backgroundColor: "#444",
+    alignItems: "center",
+    justifyContent: "center",
   },
   button: {
     backgroundColor: "#FF8800",

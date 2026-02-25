@@ -1,19 +1,23 @@
 import { useWindowDimensions } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
-import { useSharedValue, withSpring } from "react-native-reanimated";
+import {
+  cancelAnimation,
+  useSharedValue,
+  withSpring,
+} from "react-native-reanimated";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 8;
-const DOUBLE_TAP_ZOOM = 3; // zoom level to spring to on double-tap
-const SPRING = { damping: 18, stiffness: 180, mass: 0.8 };
+const DOUBLE_TAP_ZOOM = 3;
+const SPRING = { damping: 20, stiffness: 200, mass: 0.6 };
 
 /**
  * Manages zoom + canvas-pan state for the MarkIt canvas.
  *
  * Gestures:
  *  - Pinch            → zoom in/out around the pinch focal point
- *  - 2-finger pan     → pan the canvas while zoomed (clamped so image stays on screen)
- *  - Double-tap       → spring back to zoom 1× centred
+ *  - 2-finger pan     → pan the canvas while zoomed
+ *  - Double-tap       → zoom to tap point (or reset if already zoomed)
  *
  * All values are Reanimated shared values so Skia can consume them on the
  * UI thread without triggering React re-renders.
@@ -21,122 +25,134 @@ const SPRING = { damping: 18, stiffness: 180, mass: 0.8 };
 export function useZoom() {
   const { width, height } = useWindowDimensions();
 
-  // Current zoom level (1 = no zoom)
   const zoomLevel = useSharedValue(1);
-  // Canvas translation (offset from centre)
   const translateX = useSharedValue(0);
   const translateY = useSharedValue(0);
 
-  // Snapshots at gesture start
-  const zoomStart = useSharedValue(1);
-  const txStart = useSharedValue(0);
-  const tyStart = useSharedValue(0);
-  // Focal point of the pinch at gesture start (screen coords)
-  const focalX = useSharedValue(0);
-  const focalY = useSharedValue(0);
+  // --- Pinch-to-zoom ---
+  //
+  // Delta-based approach: each onUpdate frame we apply only the *change* in
+  // scale since the last frame (dScale = e.scale / lastScale), around the
+  // current focal point. This means the focal point can drift naturally as
+  // fingers move — no jolt from focal-point mismatch at gesture start.
+  //
+  // Transform: translate(cx+tx, cy+ty) → scale(s) → translate(-cx,-cy)
+  // To keep canvas point under focal fixed when applying delta dS:
+  //   tx_new = fx + (tx - fx) * dS     where fx = focalX - cx
 
-  // --- Pinch to zoom (around the pinch focal point) ---
-  //
-  // The transform in index.native.tsx is:
-  //   translateX(cx + tx) → translateY(cy + ty) → scale(s) → translateX(-cx) → translateY(-cy)
-  //
-  // To keep the focal point stationary under the fingers we adjust tx/ty so
-  // that the image pixel under the focal point doesn't move as scale changes.
-  //
-  // At scale s0 the image pixel under screen point (fx, fy) is:
-  //   imgX = (fx - cx - tx0) / s0
-  // After scaling to s1 we want that pixel to stay at (fx, fy):
-  //   tx1 = fx - cx - imgX * s1  = tx0 + imgX * (s0 - s1)
-  //       = tx0 - (fx - cx - tx0) / s0 * (s1 - s0)
+  const lastScale = useSharedValue(1);
+
+  const panTxStart = useSharedValue(0);
+  const panTyStart = useSharedValue(0);
+
+  const clamp = (val: number, min: number, max: number) => {
+    "worklet";
+    return Math.max(min, Math.min(max, val));
+  };
+
   const pinchGesture = Gesture.Pinch()
-    .onBegin((e) => {
-      zoomStart.value = zoomLevel.value;
-      txStart.value = translateX.value;
-      tyStart.value = translateY.value;
-      // Focal point relative to screen centre (matches transform origin)
-      focalX.value = e.focalX - width / 2;
-      focalY.value = e.focalY - height / 2;
+    .onBegin(() => {
+      // Cancel any in-flight spring animations so values are stable
+      cancelAnimation(zoomLevel);
+      cancelAnimation(translateX);
+      cancelAnimation(translateY);
+      lastScale.value = 1;
     })
     .onUpdate((e) => {
-      const s0 = zoomStart.value;
-      const s1 = Math.min(MAX_ZOOM, Math.max(MIN_ZOOM, s0 * e.scale));
+      // Delta scale since last frame
+      const dS = e.scale / lastScale.value;
+      lastScale.value = e.scale;
+
+      const s0 = zoomLevel.value;
+      const s1 = clamp(s0 * dS, MIN_ZOOM, MAX_ZOOM);
+      const actualDS = s1 / s0; // may differ from dS at boundaries
       zoomLevel.value = s1;
 
-      // Adjust translation so the focal point stays fixed
-      const fx = focalX.value;
-      const fy = focalY.value;
-      const newTx = txStart.value - ((fx - txStart.value) / s0) * (s1 - s0);
-      const newTy = tyStart.value - ((fy - tyStart.value) / s0) * (s1 - s0);
+      // Focal point relative to screen centre (updated every frame)
+      const fx = e.focalX - width / 2;
+      const fy = e.focalY - height / 2;
 
-      // Clamp: don't let the image leave the screen
+      // Apply delta zoom around focal point
+      const newTx = fx + (translateX.value - fx) * actualDS;
+      const newTy = fy + (translateY.value - fy) * actualDS;
+
       const maxTx = (width / 2) * (s1 - 1);
       const maxTy = (height / 2) * (s1 - 1);
-      translateX.value = Math.max(-maxTx, Math.min(maxTx, newTx));
-      translateY.value = Math.max(-maxTy, Math.min(maxTy, newTy));
+      translateX.value = clamp(newTx, -maxTx, maxTx);
+      translateY.value = clamp(newTy, -maxTy, maxTy);
     })
     .onEnd(() => {
-      // Spring the translation back inside bounds in case it drifted
+      if (zoomLevel.value < 1.05) {
+        zoomLevel.value = withSpring(1, SPRING);
+        translateX.value = withSpring(0, SPRING);
+        translateY.value = withSpring(0, SPRING);
+        return;
+      }
       const s = zoomLevel.value;
       const maxTx = (width / 2) * (s - 1);
       const maxTy = (height / 2) * (s - 1);
       translateX.value = withSpring(
-        Math.max(-maxTx, Math.min(maxTx, translateX.value)),
+        clamp(translateX.value, -maxTx, maxTx),
         SPRING,
       );
       translateY.value = withSpring(
-        Math.max(-maxTy, Math.min(maxTy, translateY.value)),
+        clamp(translateY.value, -maxTy, maxTy),
         SPRING,
       );
     });
 
-  // --- 2-finger pan (clamped so image stays on screen) ---
+  // --- 2-finger pan ---
+  // Uses its own start snapshot so it doesn't interfere with pinch snapshots
   const canvasPanGesture = Gesture.Pan()
     .minPointers(2)
     .onBegin(() => {
-      txStart.value = translateX.value;
-      tyStart.value = translateY.value;
+      cancelAnimation(translateX);
+      cancelAnimation(translateY);
+      panTxStart.value = translateX.value;
+      panTyStart.value = translateY.value;
     })
     .onUpdate((e) => {
       const s = zoomLevel.value;
       const maxTx = (width / 2) * (s - 1);
       const maxTy = (height / 2) * (s - 1);
-      translateX.value = Math.max(
+      translateX.value = clamp(
+        panTxStart.value + e.translationX,
         -maxTx,
-        Math.min(maxTx, txStart.value + e.translationX),
+        maxTx,
       );
-      translateY.value = Math.max(
+      translateY.value = clamp(
+        panTyStart.value + e.translationY,
         -maxTy,
-        Math.min(maxTy, tyStart.value + e.translationY),
+        maxTy,
       );
     });
 
-  // --- Double-tap: zoom in to tap point, or reset if already zoomed ---
+  // --- Double-tap: zoom in to tap point, or reset ---
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
     .onEnd((e) => {
-      if (zoomLevel.value > 1) {
-        // Already zoomed — spring back to reset
+      if (zoomLevel.value > 1.2) {
         zoomLevel.value = withSpring(1, SPRING);
         translateX.value = withSpring(0, SPRING);
         translateY.value = withSpring(0, SPRING);
       } else {
-        // Zoom in to the tapped point using the same focal-point math as pinch
-        const s0 = 1;
+        const s0 = zoomLevel.value;
         const s1 = DOUBLE_TAP_ZOOM;
-        // Focal point relative to screen centre (matches the transform origin)
         const fx = e.x - width / 2;
         const fy = e.y - height / 2;
-        const newTx = 0 - ((fx - 0) / s0) * (s1 - s0);
-        const newTy = 0 - ((fy - 0) / s0) * (s1 - s0);
+        const tx0 = translateX.value;
+        const ty0 = translateY.value;
+        const scale = s1 / s0;
+        const newTx = tx0 - (fx - tx0) * (scale - 1);
+        const newTy = ty0 - (fy - ty0) * (scale - 1);
         const maxTx = (width / 2) * (s1 - 1);
         const maxTy = (height / 2) * (s1 - 1);
         zoomLevel.value = withSpring(s1, SPRING);
-        translateX.value = withSpring(Math.max(-maxTx, Math.min(maxTx, newTx)), SPRING);
-        translateY.value = withSpring(Math.max(-maxTy, Math.min(maxTy, newTy)), SPRING);
+        translateX.value = withSpring(clamp(newTx, -maxTx, maxTx), SPRING);
+        translateY.value = withSpring(clamp(newTy, -maxTy, maxTy), SPRING);
       }
     });
 
-  // Pinch and 2-finger pan run simultaneously (natural pinch-to-zoom feel)
   const zoomGesture = Gesture.Simultaneous(pinchGesture, canvasPanGesture);
 
   return {

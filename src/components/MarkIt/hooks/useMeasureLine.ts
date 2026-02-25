@@ -47,13 +47,11 @@ export function useMeasureLine(
     .onBegin((e) => {
       start.value = { x: e.x, y: e.y };
       end.value = { x: e.x, y: e.y };
-      // Don't show the line yet — wait until the finger actually moves
       isActive.value = false;
       hasLine.value = false;
     })
     .onUpdate((e) => {
       end.value = { x: e.x, y: e.y };
-      // Only show once there's a real drag (> 4px) to avoid the tap flash
       const dx = e.x - start.value.x;
       const dy = e.y - start.value.y;
       if (dx * dx + dy * dy > 16) {

@@ -21,7 +21,10 @@ import { useCalibration } from "./hooks/useCalibration";
 import { useMarkItImage } from "./hooks/useMarkItImage";
 import { useMeasureLine } from "./hooks/useMeasureLine";
 import { useZoom } from "./hooks/useZoom";
-import { normalizedToImageSpace, normalizedToScreen, screenToNormalized } from "./utils/coordTransform";
+import {
+  normalizedToImageSpace,
+  screenToNormalized,
+} from "./utils/coordTransform";
 import { formatInches, screenPxToInches } from "./utils/measureMath";
 
 interface MarkItProps {
@@ -162,7 +165,13 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     labelX,
     labelY,
     lineOpacity,
-  } = useMeasureLine(scaleAtOne, zoomLevel, lastScreenPx, handleLineCommitted, isCalibrating);
+  } = useMeasureLine(
+    scaleAtOne,
+    zoomLevel,
+    lastScreenPx,
+    handleLineCommitted,
+    isCalibrating,
+  );
 
   // 10. Wrap confirmCalibration to also persist calibration events to Firestore
   const handleConfirmCalibration = async () => {
@@ -208,7 +217,12 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       const scale = realInches / intrinsicPx;
 
       // Guard: don't write corrupt events if inputs are invalid
-      if (!isFinite(scale) || scale <= 0 || !isFinite(realInches) || realInches <= 0) {
+      if (
+        !isFinite(scale) ||
+        scale <= 0 ||
+        !isFinite(realInches) ||
+        realInches <= 0
+      ) {
         confirmCalibration();
         return;
       }
@@ -239,7 +253,10 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     if (session.loading) return;
     if (session.activeCalibration && scaleAtOne.value === 0 && image) {
       const cal = session.activeCalibration;
-      const renderScale = Math.min(width / image.width(), height / image.height());
+      const renderScale = Math.min(
+        width / image.width(),
+        height / image.height(),
+      );
       const restoredScaleAtOne = cal.intrinsicScale * renderScale;
       restoreFromSession(restoredScaleAtOne, cal.intrinsicScale);
     }
@@ -255,7 +272,12 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     (evt) => {
       if (!image) return [];
       // Skip events with corrupt distanceText from old test runs
-      if (!evt.distanceText || evt.distanceText.includes("NaN") || evt.distanceText.includes("Infinity")) return [];
+      if (
+        !evt.distanceText ||
+        evt.distanceText.includes("NaN") ||
+        evt.distanceText.includes("Infinity")
+      )
+        return [];
       const s1 = normalizedToImageSpace(evt.start, image, width, height);
       const s2 = normalizedToImageSpace(evt.end, image, width, height);
       const label = evt.distanceText;
@@ -276,10 +298,14 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       : null;
 
   // 14. Compose gestures:
-  //     Double-tap is exclusive (resets zoom). Draw + zoom run simultaneously.
-  const gesture = Gesture.Exclusive(
-    doubleTapGesture,
-    Gesture.Simultaneous(drawGesture, zoomGesture),
+  //     - zoomGesture (pinch + 2-finger pan) runs simultaneously with everything —
+  //       it must never be delayed or blocked by the tap/draw recognisers.
+  //     - doubleTapGesture races with drawGesture: if two taps land quickly the
+  //       double-tap wins and the draw is cancelled; otherwise draw proceeds
+  //       immediately without waiting for a double-tap timeout.
+  const gesture = Gesture.Simultaneous(
+    zoomGesture,
+    Gesture.Exclusive(doubleTapGesture, drawGesture),
   );
 
   return (
