@@ -23,6 +23,7 @@ export function useCalibration(
   lastScreenPx: SharedValue<number>,  // written by useMeasureLine
   scaleAtOne: SharedValue<number>,    // written here, read by useMeasureLine
   lineColor: SharedValue<string>,     // written here, read by MeasureCanvas
+  isCalibrating: SharedValue<boolean>, // written here, read by useMeasureLine
 ) {
   const [mode, setMode] = useState<CalibrationMode>("calibrate");
   const [refInput, setRefInput] = useState("");
@@ -57,6 +58,7 @@ export function useCalibration(
     // This is what useMeasureLine uses on the UI thread
     scaleAtOne.value = realInches / screenPxAtOne;
     lineColor.value = "red";
+    isCalibrating.value = false;
 
     setMode("measure");
   };
@@ -67,6 +69,16 @@ export function useCalibration(
     setRefInput("");
     scaleAtOne.value = 0;
     lineColor.value = "orange";
+    isCalibrating.value = true;
+  };
+
+  /** Called on session replay — restores mode + display scale without recalculating. */
+  const restoreFromSession = (scale: number, intrinsicScaleVal: number) => {
+    scaleAtOne.value = scale;
+    lineColor.value = "red";
+    isCalibrating.value = false;
+    setIntrinsicScale(intrinsicScaleVal);
+    setMode("measure");
   };
 
   return {
@@ -76,5 +88,6 @@ export function useCalibration(
     intrinsicScale,
     confirmCalibration,
     recalibrate,
+    restoreFromSession,
   };
 }

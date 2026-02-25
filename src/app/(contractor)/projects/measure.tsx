@@ -1,19 +1,22 @@
 import MarkIt from "@/src/components/MarkIt";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React from "react";
 import { Pressable, StyleSheet, View } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function MeasureScreen() {
-  const { fileUrl } = useLocalSearchParams<{ fileUrl: string }>();
+  const { fileUrl, projectId, fileId } = useLocalSearchParams<{
+    fileUrl: string;
+    projectId: string;
+    fileId: string;
+  }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
   return (
     <View style={styles.container}>
-      <MarkIt imageUrl={fileUrl} />
-      {/* Back button floated over the canvas */}
+      <MarkIt imageUrl={fileUrl} projectId={projectId} fileId={fileId} />
       <Pressable
         onPress={() => router.back()}
         style={[styles.backButton, { top: insets.top + 12 }]}

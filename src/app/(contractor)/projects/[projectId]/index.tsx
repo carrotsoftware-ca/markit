@@ -17,15 +17,22 @@ import { Pressable, ScrollView } from "react-native";
 
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
-  const { deleteProject, watchProject, project } = useProjects();
+  const { deleteProject, watchProject, watchProjectFiles, project, files } =
+    useProjects();
   const { theme } = useTheme();
   const router = useRouter();
   const dialog = useConfirmDialog();
 
   useFocusEffect(
     useCallback(() => {
-      const unsubscribe = watchProject(projectId as string);
-      return () => unsubscribe();
+      // Subscribe to both the project document AND its files subcollection.
+      // Both return unsubscribe functions; we call them both on cleanup.
+      const unsubProject = watchProject(projectId as string);
+      const unsubFiles = watchProjectFiles(projectId as string);
+      return () => {
+        unsubProject();
+        unsubFiles();
+      };
     }, [projectId]),
   );
 
@@ -42,16 +49,17 @@ export default function ProjectDetailsScreen() {
   };
 
   const handleFilePress = (fileId: string) => {
-    const file = (project?.files ?? []).find((f) => f.id === fileId);
+    const file = files.find((f) => f.id === fileId);
     if (!file?.url) return;
     router.push({
       pathname: "/(contractor)/projects/measure",
-      params: { fileUrl: file.url },
+      // Pass projectId + fileId so the measure screen can connect to the event log
+      params: { fileUrl: file.url, projectId: projectId as string, fileId },
     });
   };
 
   const handleFileMenu = (fileId: string) => {
-    const file = (project?.files ?? []).find((f) => f.id === fileId);
+    const file = files.find((f) => f.id === fileId);
     if (!file) return;
     dialog.show({
       title: "Delete File",
@@ -107,7 +115,7 @@ export default function ProjectDetailsScreen() {
             />
             <ProjectAssets onUpload={handleUpload} />
             <UploadedFiles
-              files={project?.files ?? []}
+              files={files}
               onFileMenu={handleFileMenu}
               onFilePress={handleFilePress}
             />

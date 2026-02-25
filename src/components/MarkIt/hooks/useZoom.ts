@@ -1,9 +1,10 @@
+import { useWindowDimensions } from "react-native";
 import { Gesture } from "react-native-gesture-handler";
 import { useSharedValue, withSpring } from "react-native-reanimated";
-import { useWindowDimensions } from "react-native";
 
 const MIN_ZOOM = 1;
 const MAX_ZOOM = 8;
+const DOUBLE_TAP_ZOOM = 3; // zoom level to spring to on double-tap
 const SPRING = { damping: 18, stiffness: 180, mass: 0.8 };
 
 /**
@@ -64,8 +65,8 @@ export function useZoom() {
       // Adjust translation so the focal point stays fixed
       const fx = focalX.value;
       const fy = focalY.value;
-      const newTx = txStart.value - (fx - txStart.value) / s0 * (s1 - s0);
-      const newTy = tyStart.value - (fy - tyStart.value) / s0 * (s1 - s0);
+      const newTx = txStart.value - ((fx - txStart.value) / s0) * (s1 - s0);
+      const newTy = tyStart.value - ((fy - tyStart.value) / s0) * (s1 - s0);
 
       // Clamp: don't let the image leave the screen
       const maxTx = (width / 2) * (s1 - 1);
@@ -109,13 +110,30 @@ export function useZoom() {
       );
     });
 
-  // --- Double-tap to reset ---
+  // --- Double-tap: zoom in to tap point, or reset if already zoomed ---
   const doubleTapGesture = Gesture.Tap()
     .numberOfTaps(2)
-    .onEnd(() => {
-      zoomLevel.value = withSpring(1, SPRING);
-      translateX.value = withSpring(0, SPRING);
-      translateY.value = withSpring(0, SPRING);
+    .onEnd((e) => {
+      if (zoomLevel.value > 1) {
+        // Already zoomed — spring back to reset
+        zoomLevel.value = withSpring(1, SPRING);
+        translateX.value = withSpring(0, SPRING);
+        translateY.value = withSpring(0, SPRING);
+      } else {
+        // Zoom in to the tapped point using the same focal-point math as pinch
+        const s0 = 1;
+        const s1 = DOUBLE_TAP_ZOOM;
+        // Focal point relative to screen centre (matches the transform origin)
+        const fx = e.x - width / 2;
+        const fy = e.y - height / 2;
+        const newTx = 0 - ((fx - 0) / s0) * (s1 - s0);
+        const newTy = 0 - ((fy - 0) / s0) * (s1 - s0);
+        const maxTx = (width / 2) * (s1 - 1);
+        const maxTy = (height / 2) * (s1 - 1);
+        zoomLevel.value = withSpring(s1, SPRING);
+        translateX.value = withSpring(Math.max(-maxTx, Math.min(maxTx, newTx)), SPRING);
+        translateY.value = withSpring(Math.max(-maxTy, Math.min(maxTy, newTy)), SPRING);
+      }
     });
 
   // Pinch and 2-finger pan run simultaneously (natural pinch-to-zoom feel)

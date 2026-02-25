@@ -8,6 +8,9 @@ export interface ProjectFile {
   url?: string;
   storagePath?: string;
   mimeType?: string;
+  // markit-specific fields — null means the file hasn't been opened in MarkIt yet
+  markitStatus?: "active" | "exported";
+  exportedUrl?: string;
 }
 
 export interface Project {
@@ -21,7 +24,8 @@ export interface Project {
   ownerId: string;
   emailNotifications: boolean;
   notifications: boolean;
-  files?: ProjectFile[];
+  // files are now a Firestore subcollection: projects/{id}/files/{fileId}
+  // they are NOT stored on this document anymore
 }
 
 export type CreateProjectInput = Omit<
@@ -39,4 +43,9 @@ export type WatchProjectsFn = (
 export type WatchProjectFn = (
   projectId: string,
   setProject: (project: Project) => void,
+) => () => void;
+
+export type WatchProjectFilesFn = (
+  projectId: string,
+  setFiles: (files: ProjectFile[]) => void,
 ) => () => void;

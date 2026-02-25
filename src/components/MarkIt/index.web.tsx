@@ -4,14 +4,20 @@ import { StyleSheet, Text, View } from "react-native";
 
 interface MarkItWebProps {
   imageUrl?: string;
+  projectId?: string;
+  fileId?: string;
 }
 
-export default function MarkItWeb({ imageUrl }: MarkItWebProps) {
+export default function MarkItWeb({
+  imageUrl,
+  projectId,
+  fileId,
+}: MarkItWebProps) {
   return (
     <View style={{ flex: 1 }}>
       <WithSkiaWeb
         getComponent={() => import("./index.native")}
-        componentProps={{ imageUrl }}
+        componentProps={{ imageUrl, projectId, fileId }}
         opts={{ locateFile: () => "/canvaskit.wasm" }}
         fallback={
           <View style={styles.loading}>

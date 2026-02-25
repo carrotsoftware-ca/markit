@@ -1,19 +1,20 @@
-import React, { useState } from "react";
+import React, { useEffect, useState } from "react";
 import {
   Keyboard,
+  Pressable,
   StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
+import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  runOnJS,
   useAnimatedStyle,
   useSharedValue,
-  withSpring,
+  withTiming,
 } from "react-native-reanimated";
-import { Gesture, GestureDetector } from "react-native-gesture-handler";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import type { CalibrationMode } from "../hooks/useCalibration";
 
@@ -24,20 +25,12 @@ interface CalibrationPanelProps {
   intrinsicScale: number | null;
   onConfirm: () => void;
   onRecalibrate: () => void;
+  /** Show/hide calibration reference line toggle — only relevant in measure mode */
+  hasCalibrationLine?: boolean;
+  showCalibrationLine?: boolean;
+  onToggleCalibrationLine?: () => void;
 }
 
-const SPRING = { damping: 18, stiffness: 200, mass: 0.8 };
-// Collapsed height: just the drag handle + one line of text + padding
-const COLLAPSED_HEIGHT = 44;
-
-/**
- * Draggable overlay panel that guides the user through calibration and
- * shows measurement mode controls.
- *
- * - Drag handle: drag to reposition
- * - Tap handle: collapse / expand with a spring animation
- * - Keyboard: "Done" toolbar button + tapping outside the input dismisses it
- */
 export function CalibrationPanel({
   mode,
   refInput,
@@ -45,16 +38,38 @@ export function CalibrationPanel({
   intrinsicScale,
   onConfirm,
   onRecalibrate,
+  hasCalibrationLine,
+  showCalibrationLine,
+  onToggleCalibrationLine,
 }: CalibrationPanelProps) {
   const panelX = useSharedValue(0);
   const panelY = useSharedValue(0);
   const offsetX = useSharedValue(0);
   const offsetY = useSharedValue(0);
-  const collapsed = useSharedValue(false);
-  const contentOpacity = useSharedValue(1);
-  const panelHeight = useSharedValue(0); // 0 = unconstrained (auto)
+  const kbOffset = useSharedValue(0);
 
-  // Drag gesture — only fires if the finger moves (not a tap)
+  useEffect(() => {
+    const show = Keyboard.addListener("keyboardWillShow", (e) => {
+      kbOffset.value = withTiming(-e.endCoordinates.height, { duration: e.duration ?? 250 });
+    });
+    const hide = Keyboard.addListener("keyboardWillHide", (e) => {
+      kbOffset.value = withTiming(0, { duration: e.duration ?? 250 });
+    });
+    return () => { show.remove(); hide.remove(); };
+  }, []);
+
+  const panelAnimStyle = useAnimatedStyle(() => ({
+    transform: [
+      { translateX: panelX.value },
+      { translateY: panelY.value + kbOffset.value },
+    ],
+  }));
+
+  // In measure mode the panel is hidden by default; user shows it via toolbar
+  const [measurePanelVisible, setMeasurePanelVisible] = useState(false);
+
+  // Drag gesture — repositions the panel (title row only).
+  // minDistance prevents accidental drags when tapping TextInput/buttons.
   const dragGesture = Gesture.Pan()
     .minDistance(6)
     .onBegin(() => {
@@ -66,123 +81,131 @@ export function CalibrationPanel({
       panelY.value = offsetY.value + e.translationY;
     });
 
-  // Tap gesture on the handle — toggles collapsed state
-  const tapGesture = Gesture.Tap()
-    .maxDistance(8)
-    .onEnd(() => {
-      const next = !collapsed.value;
-      collapsed.value = next;
-      contentOpacity.value = withSpring(next ? 0 : 1, SPRING);
-      panelHeight.value = withSpring(next ? COLLAPSED_HEIGHT : 0, SPRING);
-    });
-
-  // Handle receives both — tap fires if no drag movement
-  const handleGesture = Gesture.Simultaneous(dragGesture, tapGesture);
-
-  const panelAnimStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: panelX.value },
-      { translateY: panelY.value },
-    ],
-    // 0 means height is unset (auto) — we only constrain it when collapsing
-    ...(panelHeight.value > 0 ? { height: panelHeight.value, overflow: "hidden" as const } : {}),
-  }));
-
-  const contentAnimStyle = useAnimatedStyle(() => ({
-    opacity: contentOpacity.value,
-  }));
-
-  return (
-    <View style={styles.overlay} pointerEvents="box-none">
-      <GestureDetector gesture={dragGesture}>
-        <Animated.View style={[styles.panel, panelAnimStyle]}>
-
-          {/* Drag handle — also tappable to collapse */}
-          <GestureDetector gesture={handleGesture}>
-            <View style={styles.handleRow}>
-              <View style={styles.dragHandle} />
-              {collapsed.value ? (
-                <Text style={styles.collapsedLabel}>
-                  {mode === "calibrate" ? "📏 Calibration" : "📐 Measuring"} — tap to expand
-                </Text>
-              ) : null}
-            </View>
-          </GestureDetector>
-
-          <Animated.View style={contentAnimStyle}>
-            {mode === "calibrate" ? (
-              <>
+  // --- Calibrate mode ---
+  if (mode === "calibrate") {
+    return (
+      <View style={styles.calibrateWrapper} pointerEvents="box-none">
+        <View style={styles.overlay} pointerEvents="box-none">
+          <GestureDetector gesture={dragGesture}>
+            <Animated.View style={[styles.panel, panelAnimStyle]}>
+              <View style={styles.titleRow}>
                 <Text style={styles.title}>📏 Calibration</Text>
-                <Text style={styles.subtitle}>
-                  Draw a line over a known object, then enter its real size.
-                </Text>
-                <TextInput
-                  style={styles.input}
-                  placeholder="Size in inches (e.g. 4)"
-                  placeholderTextColor="#aaa"
-                  keyboardType="numeric"
-                  returnKeyType="done"
-                  onSubmitEditing={Keyboard.dismiss}
-                  value={refInput}
-                  onChangeText={onRefInputChange}
+                <MaterialCommunityIcons
+                  name="drag-variant"
+                  size={22}
+                  color="#666"
                 />
-                <TouchableOpacity
-                  style={styles.button}
-                  onPress={() => {
-                    Keyboard.dismiss();
-                    onConfirm();
-                  }}
-                >
-                  <Text style={styles.buttonText}>Set Scale & Measure</Text>
-                </TouchableOpacity>
-              </>
-            ) : (
-              <>
+              </View>
+              <Text style={styles.subtitle}>
+                Draw a line over a known object, then enter its real size.
+              </Text>
+              <TextInput
+                style={styles.input}
+                placeholder="Size in inches (e.g. 4)"
+                placeholderTextColor="#aaa"
+                keyboardType="decimal-pad"
+                value={refInput}
+                onChangeText={onRefInputChange}
+              />
+              <TouchableOpacity
+                style={styles.button}
+                onPress={onConfirm}
+              >
+                <Text style={styles.buttonText}>Set Scale & Measure</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </GestureDetector>
+        </View>
+      </View>
+    );
+  }
+
+  // --- Measure mode: toolbar icon top-right + optional panel ---
+  return (
+    <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* Toolbar icon — top right */}
+      <Pressable
+        style={styles.toolbarIcon}
+        onPress={() => setMeasurePanelVisible((v) => !v)}
+      >
+        <MaterialCommunityIcons name="tools" size={22} color="#fff" />
+      </Pressable>
+
+      {/* Measure panel */}
+      {measurePanelVisible && (
+        <View style={styles.overlay} pointerEvents="box-none">
+          <GestureDetector gesture={dragGesture}>
+            <Animated.View style={[styles.panel, panelAnimStyle]}>
+              <View style={styles.titleRow}>
                 <Text style={styles.title}>📐 Measuring</Text>
-                <Text style={styles.subtitle}>
-                  Scale: {intrinsicScale?.toFixed(5)} in/px (intrinsic)
-                </Text>
+                <MaterialCommunityIcons
+                  name="drag-variant"
+                  size={22}
+                  color="#666"
+                />
+              </View>
+              <Text style={styles.subtitle}>
+                {intrinsicScale
+                  ? `Scale: ${intrinsicScale.toFixed(5)} in/px`
+                  : "No scale set"}
+              </Text>
+              {hasCalibrationLine && (
                 <TouchableOpacity
                   style={[styles.button, styles.buttonSecondary]}
-                  onPress={onRecalibrate}
+                  onPress={onToggleCalibrationLine}
                 >
-                  <Text style={styles.buttonText}>Recalibrate</Text>
+                  <Text style={styles.buttonText}>
+                    {showCalibrationLine ? "Hide" : "Show"} reference line
+                  </Text>
                 </TouchableOpacity>
-              </>
-            )}
-          </Animated.View>
-
-        </Animated.View>
-      </GestureDetector>
+              )}
+              <TouchableOpacity
+                style={[styles.button, styles.buttonSecondary]}
+                onPress={() => {
+                  setMeasurePanelVisible(false);
+                  onRecalibrate();
+                }}
+              >
+                <Text style={styles.buttonText}>Recalibrate</Text>
+              </TouchableOpacity>
+            </Animated.View>
+          </GestureDetector>
+        </View>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
+  calibrateWrapper: {
+    ...StyleSheet.absoluteFillObject,
+    justifyContent: "flex-end",
+    pointerEvents: "box-none" as any,
+  },
   overlay: {
     position: "absolute",
     bottom: 32,
     left: 16,
     right: 16,
   },
-  handleRow: {
-    alignItems: "center",
-    paddingVertical: 4,
-    marginBottom: 4,
-  },
-  dragHandle: {
+  toolbarIcon: {
+    position: "absolute",
+    top: 56,
+    right: 16,
     width: 40,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: "#666",
-    marginBottom: 4,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: "rgba(0,0,0,0.55)",
+    alignItems: "center",
+    justifyContent: "center",
   },
-  collapsedLabel: {
-    color: "#aaa",
-    fontSize: 13,
+  titleRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "space-between",
   },
   panel: {
-    backgroundColor: "rgba(0,0,0,0.80)",
+    backgroundColor: "rgba(0,0,0,0.85)",
     borderRadius: 16,
     padding: 16,
     gap: 8,

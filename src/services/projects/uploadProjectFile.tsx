@@ -2,12 +2,6 @@ import { getFirestore, getStorage } from "@/src/services/firebase";
 import { ProjectFile } from "@/src/types";
 import { Platform } from "react-native";
 
-function stripUndefined<T extends object>(obj: T): T {
-  return Object.fromEntries(
-    Object.entries(obj).filter(([, v]) => v !== undefined),
-  ) as T;
-}
-
 export async function uploadProjectFile(
   projectId: string,
   localUri: string,
@@ -15,14 +9,22 @@ export async function uploadProjectFile(
   mimeType: string | undefined,
   fileSize: number | undefined,
 ): Promise<void> {
-  const storagePath = `projects/${projectId}/${Date.now()}_${filename}`;
-  const ref = getStorage().ref(storagePath);
+  const fileId = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const storagePath = `projects/${projectId}/${fileId}`;
+  const storageRef = getStorage().ref(storagePath);
   const db = getFirestore();
-  const projectRef = db.collection("projects").doc(projectId);
 
-  // Optimistic write — shows the row immediately with "uploading" pulse
+  // The file subcollection path: projects/{projectId}/files/{fileId}
+  // fileId has no slashes so Firestore won't misinterpret it as a nested path.
+  const fileRef = db
+    .collection("projects")
+    .doc(projectId)
+    .collection("files")
+    .doc(fileId);
+
+  // Write the optimistic "uploading" row immediately so the UI shows it right away
   const optimisticFile: ProjectFile = {
-    id: storagePath,
+    id: fileId,
     filename,
     size: fileSize ? `${(fileSize / 1024).toFixed(0)} KB` : "—",
     date: new Date().toLocaleDateString("en-US", {
@@ -35,36 +37,22 @@ export async function uploadProjectFile(
     storagePath,
     ...(mimeType !== undefined && { mimeType }),
   };
+  await fileRef.set(optimisticFile);
 
-  const snapBefore = await projectRef.get();
-  const existingBefore: ProjectFile[] = (snapBefore.data()?.files ?? []).filter(
-    (f: any) => f && f.id && f.filename,
-  );
-  await projectRef.set(
-    { files: [...existingBefore, optimisticFile].map(stripUndefined) },
-    { merge: true },
-  );
-
-  // Do the actual upload
+  // Do the actual upload to Firebase Storage
   if (Platform.OS === "web") {
     const response = await fetch(localUri);
     const blob = await response.blob();
-    await ref.put(blob, mimeType ? { contentType: mimeType } : undefined);
+    await storageRef.put(
+      blob,
+      mimeType ? { contentType: mimeType } : undefined,
+    );
   } else {
-    await ref.putFile(localUri);
+    await storageRef.putFile(localUri);
   }
 
-  const url = await ref.getDownloadURL();
+  const url = await storageRef.getDownloadURL();
 
-  // Replace the optimistic entry with the completed file
-  const snapAfter = await projectRef.get();
-  const existingAfter: ProjectFile[] = (snapAfter.data()?.files ?? []).filter(
-    (f: any) => f && f.id && f.filename,
-  );
-  const updatedFiles = existingAfter.map((f) =>
-    f.id === storagePath
-      ? stripUndefined({ ...f, status: "done" as const, url })
-      : f,
-  );
-  await projectRef.set({ files: updatedFiles }, { merge: true });
+  // Update just the status + url fields on the file doc — no array juggling needed
+  await fileRef.update({ status: "done", url });
 }
