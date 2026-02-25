@@ -1,5 +1,5 @@
 import { useImage } from "@shopify/react-native-skia";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
   StyleSheet,
@@ -12,6 +12,8 @@ import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
 import { useMarkitSession } from "@/src/hooks/useMarkitSession";
 import { CalibrationPanel } from "./components/CalibrationPanel";
+import { DeleteMeasurementDialog } from "./components/DeleteMeasurementDialog";
+import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import {
   CalibrationScreenLine,
   CommittedLine,
@@ -104,16 +106,41 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     isCalibrating,
   );
 
-  // 8. Called on the JS thread when the user lifts their finger after drawing.
-  //    Converts final screen coords to normalized image coords and persists
-  //    the measurement event to Firestore.
+  // Stable ref that always holds the latest committedLines array.
+  // Initialized here (before any gesture callbacks) so the tap-to-delete
+  // closure always finds a valid ref object, even on the first render.
+  const committedLinesRef = useRef<CommittedLine[]>([]);
+  // Stable refs for values used inside gesture callbacks — avoids stale closures.
+  const modeRef = useRef(mode);
+  const pendingMeasurementRef = useRef<typeof pendingMeasurement>(null);
+  const imageRef = useRef(image);
+  // Pending delete — set when the user taps a committed line, cleared on confirm/cancel.
+  const [pendingDelete, setPendingDelete] = useState<{
+    id: string;
+    distanceText: string;
+  } | null>(null);
+  const pendingDeleteRef = useRef<typeof pendingDelete>(null);
+
+  // 8. Pending measurement — set when a line is drawn, cleared on save/discard.
+  //    The line stays visible on-canvas while this is set.
+  const [pendingMeasurement, setPendingMeasurement] = useState<{
+    normStart: { x: number; y: number };
+    normEnd: { x: number; y: number };
+    distanceText: string;
+  } | null>(null);
+
+  // Shared value that keeps the drawn line visible while a measurement is pending.
+  const keepLinePending = useSharedValue(false);
+
+  // Called on the JS thread when the user lifts their finger after drawing.
+  // Stores the result as pending rather than saving immediately.
   const handleLineCommitted = (
     sx1: number,
     sy1: number,
     sx2: number,
     sy2: number,
   ) => {
-    if (!image || !projectId || !fileId || mode !== "measure") return;
+    if (!image || mode !== "measure") return;
 
     const normStart = screenToNormalized(
       sx1,
@@ -143,18 +170,125 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       scaleAtOne.value,
       zoomLevel.value,
     );
+    const distText = formatInches(inches);
 
+    // Keep the drawn line visible while the user decides
+    keepLinePending.value = true;
+    setPendingMeasurement({ normStart, normEnd, distanceText: distText });
+  };
+
+  const handleSaveMeasurement = () => {
+    if (!pendingMeasurement || !projectId || !fileId) {
+      keepLinePending.value = false;
+      setPendingMeasurement(null);
+      return;
+    }
     session.addEvent({
       type: "measurement",
-      start: normStart,
-      end: normEnd,
-      distanceText: formatInches(inches),
+      start: pendingMeasurement.normStart,
+      end: pendingMeasurement.normEnd,
+      distanceText: pendingMeasurement.distanceText,
     } as any);
+    keepLinePending.value = false;
+    setPendingMeasurement(null);
   };
+
+  const handleDiscardMeasurement = () => {
+    keepLinePending.value = false;
+    setPendingMeasurement(null);
+  };
+
+  // Delete a committed measurement by its id (soft-delete via event log).
+  const handleDeleteMeasurement = async (id: string) => {
+    if (!projectId || !fileId) return;
+    await session.addEvent({ type: "delete", targetEventId: id } as any);
+    setPendingDelete(null);
+  };
+
+  // Single-tap on a committed line deletes it.
+  // All JS values are read from refs to avoid stale closure bugs.
+  // Both the tap and the committed line coords are in the same space:
+  // canvas pixels at zoom=1, tx=0, ty=0 (what normalizedToImageSpace returns).
+  const HIT_THRESHOLD_SCREEN_PX = 24;
+  const tapToDeleteGesture = Gesture.Tap()
+    .maxDuration(300)
+    .runOnJS(true)
+    .onEnd((e) => {
+      const currentMode = modeRef.current;
+      const currentPending = pendingMeasurementRef.current;
+      const currentImage = imageRef.current;
+      const lines = committedLinesRef.current;
+
+      if (currentMode !== "measure" || currentPending !== null) return;
+      if (pendingDeleteRef.current !== null) return;
+      if (!currentImage || lines.length === 0) return;
+
+      // Convert tap → canvas coords at zoom=1 (same space as committedLines)
+      const tapUnzoomed = screenToNormalized(
+        e.x,
+        e.y,
+        currentImage,
+        width,
+        height,
+        zoomLevel.value,
+        translateX.value,
+        translateY.value,
+      );
+      // Back to image-space pixels at zoom=1 (matches normalizedToImageSpace)
+      const rect = {
+        x: (width - currentImage.width() * Math.min(width / currentImage.width(), height / currentImage.height())) / 2,
+        y: (height - currentImage.height() * Math.min(width / currentImage.width(), height / currentImage.height())) / 2,
+        w: currentImage.width() * Math.min(width / currentImage.width(), height / currentImage.height()),
+        h: currentImage.height() * Math.min(width / currentImage.width(), height / currentImage.height()),
+      };
+      const tapX = tapUnzoomed.x * rect.w + rect.x;
+      const tapY = tapUnzoomed.y * rect.h + rect.y;
+
+      // Hit threshold in the same canvas-at-zoom-1 space, scaled to feel
+      // like a constant number of screen pixels regardless of zoom.
+      const hitThreshold = HIT_THRESHOLD_SCREEN_PX / zoomLevel.value;
+
+      let closest: string | null = null;
+      let closestDist = hitThreshold;
+
+      for (const line of lines) {
+        const dx = line.x2 - line.x1;
+        const dy = line.y2 - line.y1;
+        const lenSq = dx * dx + dy * dy;
+        let dist: number;
+        if (lenSq === 0) {
+          dist = Math.sqrt((tapX - line.x1) ** 2 + (tapY - line.y1) ** 2);
+        } else {
+          const t = Math.max(
+            0,
+            Math.min(1, ((tapX - line.x1) * dx + (tapY - line.y1) * dy) / lenSq),
+          );
+          dist = Math.sqrt(
+            (tapX - (line.x1 + t * dx)) ** 2 +
+              (tapY - (line.y1 + t * dy)) ** 2,
+          );
+        }
+        if (dist < closestDist) {
+          closestDist = dist;
+          closest = line.id;
+        }
+      }
+
+      if (closest !== null) {
+        const line = lines.find((l) => l.id === closest);
+        setPendingDelete({ id: closest, distanceText: line?.label ?? "" });
+      }
+    });
 
   // 9. 1-finger draw gesture + live distance label.
   //    handleLineCommitted is passed as a callback so the gesture bridges
   //    back to the JS thread via runOnJS internally.
+  //    keepLineVisible: line stays on screen while calibrating OR while a
+  //    measurement is pending confirmation.
+  const keepLineVisible = useDerivedValue(
+    () => isCalibrating.value || keepLinePending.value,
+  );
+
   const {
     drawGesture,
     distanceText,
@@ -170,7 +304,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     zoomLevel,
     lastScreenPx,
     handleLineCommitted,
-    isCalibrating,
+    keepLineVisible,
   );
 
   // 10. Wrap confirmCalibration to also persist calibration events to Firestore
@@ -285,6 +419,13 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     },
   );
 
+  // Keep all gesture refs current on every render.
+  committedLinesRef.current = committedLines;
+  modeRef.current = mode;
+  pendingMeasurementRef.current = pendingMeasurement;
+  pendingDeleteRef.current = pendingDelete;
+  imageRef.current = image;
+
   // 13. Convert calibration reference line to image-space coords if visible.
   //     Also rendered inside the zoom Group so it tracks the image.
   const calibrationScreenLine: CalibrationScreenLine | null =
@@ -305,7 +446,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   //       immediately without waiting for a double-tap timeout.
   const gesture = Gesture.Simultaneous(
     zoomGesture,
-    Gesture.Exclusive(doubleTapGesture, drawGesture),
+    Gesture.Exclusive(doubleTapGesture, tapToDeleteGesture, drawGesture),
   );
 
   return (
@@ -348,6 +489,22 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
         showCalibrationLine={showCalibrationLine}
         onToggleCalibrationLine={() => setShowCalibrationLine((v) => !v)}
       />
+
+      {pendingMeasurement && (
+        <MeasurementConfirmBar
+          distanceText={pendingMeasurement.distanceText}
+          onSave={handleSaveMeasurement}
+          onDiscard={handleDiscardMeasurement}
+        />
+      )}
+
+      {pendingDelete && (
+        <DeleteMeasurementDialog
+          distanceText={pendingDelete.distanceText}
+          onConfirm={() => handleDeleteMeasurement(pendingDelete.id)}
+          onCancel={() => setPendingDelete(null)}
+        />
+      )}
     </View>
   );
 }
