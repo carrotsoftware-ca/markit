@@ -29,14 +29,20 @@ export function useCalibration(
   const [refInput, setRefInput] = useState("");
   const [intrinsicScale, setIntrinsicScale] = useState<number | null>(null);
 
+  // Keep a ref so confirmCalibration always sees current dimensions
+  const dimensionsRef = useRef({ width, height });
+  dimensionsRef.current = { width, height };
+
   /**
    * How many screen pixels equal one intrinsic image pixel under Skia's
    * "contain" fit. Used to store a resolution-independent scale for display.
    */
   const getRenderScale = () => {
     if (!image) return 1;
-    const scaleX = width / image.width();
-    const scaleY = height / image.height();
+    const { width: w, height: h } = dimensionsRef.current;
+    if (w === 0 || h === 0) return 1;
+    const scaleX = w / image.width();
+    const scaleY = h / image.height();
     return Math.min(scaleX, scaleY);
   };
 

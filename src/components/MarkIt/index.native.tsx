@@ -2,10 +2,10 @@ import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
+  LayoutChangeEvent,
   StyleSheet,
   Text,
   View,
-  useWindowDimensions,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
@@ -13,12 +13,12 @@ import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { useMarkitSession } from "@/src/hooks/useMarkitSession";
 import { CalibrationPanel } from "./components/CalibrationPanel";
 import { DeleteMeasurementDialog } from "./components/DeleteMeasurementDialog";
-import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import {
   CalibrationScreenLine,
   CommittedLine,
   MeasureCanvas,
 } from "./components/MeasureCanvas";
+import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import { useCalibration } from "./hooks/useCalibration";
 import { useMarkItImage } from "./hooks/useMarkItImage";
 import { useMeasureLine } from "./hooks/useMeasureLine";
@@ -36,7 +36,18 @@ interface MarkItProps {
 }
 
 export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
-  const { width, height } = useWindowDimensions();
+  // Use onLayout so we get the actual component dimensions, not the window.
+  // On web, useWindowDimensions() returns the browser window size which
+  // doesn't match the canvas area — causing calibration to be off.
+  const [dimensions, setDimensions] = useState({ width: 0, height: 0 });
+  const { width, height } = dimensions;
+
+  const handleLayout = (e: LayoutChangeEvent) => {
+    const { width: w, height: h } = e.nativeEvent.layout;
+    if (w > 0 && h > 0) {
+      setDimensions({ width: w, height: h });
+    }
+  };
 
   // 1. Resolve image URI (handles platform differences + Firebase URL encoding)
   const localUri = useMarkItImage(imageUrl);
@@ -114,6 +125,8 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   const modeRef = useRef(mode);
   const pendingMeasurementRef = useRef<typeof pendingMeasurement>(null);
   const imageRef = useRef(image);
+  // Dimensions ref — keeps width/height current so callbacks never see 0×0
+  const dimensionsRef = useRef({ width, height });
   // Pending delete — set when the user taps a committed line, cleared on confirm/cancel.
   const [pendingDelete, setPendingDelete] = useState<{
     id: string;
@@ -141,26 +154,16 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     sy2: number,
   ) => {
     if (!image || mode !== "measure") return;
+    const { width: w, height: h } = dimensionsRef.current;
+    if (w === 0 || h === 0) return;
 
     const normStart = screenToNormalized(
-      sx1,
-      sy1,
-      image,
-      width,
-      height,
-      zoomLevel.value,
-      translateX.value,
-      translateY.value,
+      sx1, sy1, image, w, h,
+      zoomLevel.value, translateX.value, translateY.value,
     );
     const normEnd = screenToNormalized(
-      sx2,
-      sy2,
-      image,
-      width,
-      height,
-      zoomLevel.value,
-      translateX.value,
-      translateY.value,
+      sx2, sy2, image, w, h,
+      zoomLevel.value, translateX.value, translateY.value,
     );
     const dx = sx2 - sx1;
     const dy = sy2 - sy1;
@@ -223,23 +226,23 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       if (pendingDeleteRef.current !== null) return;
       if (!currentImage || lines.length === 0) return;
 
+      const { width: w, height: h } = dimensionsRef.current;
+      if (w === 0 || h === 0) return;
+
       // Convert tap → canvas coords at zoom=1 (same space as committedLines)
       const tapUnzoomed = screenToNormalized(
-        e.x,
-        e.y,
-        currentImage,
-        width,
-        height,
-        zoomLevel.value,
-        translateX.value,
-        translateY.value,
+        e.x, e.y, currentImage, w, h,
+        zoomLevel.value, translateX.value, translateY.value,
       );
       // Back to image-space pixels at zoom=1 (matches normalizedToImageSpace)
+      const renderScale = Math.min(w / currentImage.width(), h / currentImage.height());
+      const renderedW = currentImage.width() * renderScale;
+      const renderedH = currentImage.height() * renderScale;
       const rect = {
-        x: (width - currentImage.width() * Math.min(width / currentImage.width(), height / currentImage.height())) / 2,
-        y: (height - currentImage.height() * Math.min(width / currentImage.width(), height / currentImage.height())) / 2,
-        w: currentImage.width() * Math.min(width / currentImage.width(), height / currentImage.height()),
-        h: currentImage.height() * Math.min(width / currentImage.width(), height / currentImage.height()),
+        x: (w - renderedW) / 2,
+        y: (h - renderedH) / 2,
+        w: renderedW,
+        h: renderedH,
       };
       const tapX = tapUnzoomed.x * rect.w + rect.x;
       const tapY = tapUnzoomed.y * rect.h + rect.y;
@@ -261,11 +264,13 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
         } else {
           const t = Math.max(
             0,
-            Math.min(1, ((tapX - line.x1) * dx + (tapY - line.y1) * dy) / lenSq),
+            Math.min(
+              1,
+              ((tapX - line.x1) * dx + (tapY - line.y1) * dy) / lenSq,
+            ),
           );
           dist = Math.sqrt(
-            (tapX - (line.x1 + t * dx)) ** 2 +
-              (tapY - (line.y1 + t * dy)) ** 2,
+            (tapX - (line.x1 + t * dx)) ** 2 + (tapY - (line.y1 + t * dy)) ** 2,
           );
         }
         if (dist < closestDist) {
@@ -310,6 +315,8 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   // 10. Wrap confirmCalibration to also persist calibration events to Firestore
   const handleConfirmCalibration = async () => {
     if (image && projectId && fileId) {
+      const { width: w, height: h } = dimensionsRef.current;
+
       // If there are any existing events (recalibration), clear them all first
       const hasExistingEvents =
         !!session.activeCalibration ||
@@ -321,30 +328,15 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
 
       const calLineId = `${Date.now()}_cal_line`;
       const normStart = screenToNormalized(
-        start.value.x,
-        start.value.y,
-        image,
-        width,
-        height,
-        zoomLevel.value,
-        translateX.value,
-        translateY.value,
+        start.value.x, start.value.y, image, w, h,
+        zoomLevel.value, translateX.value, translateY.value,
       );
       const normEnd = screenToNormalized(
-        end.value.x,
-        end.value.y,
-        image,
-        width,
-        height,
-        zoomLevel.value,
-        translateX.value,
-        translateY.value,
+        end.value.x, end.value.y, image, w, h,
+        zoomLevel.value, translateX.value, translateY.value,
       );
 
-      const renderScale = Math.min(
-        width / image.width(),
-        height / image.height(),
-      );
+      const renderScale = Math.min(w / image.width(), h / image.height());
       const screenPxAtOne = lastScreenPx.value / zoomLevel.value;
       const intrinsicPx = screenPxAtOne / renderScale;
       const realInches = parseFloat(refInput);
@@ -383,18 +375,21 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
 
   // 11. When events load from Firestore and a calibration already exists,
   //     restore scaleAtOne + lineColor so committed lines show correct labels.
+  //     Also re-runs when dimensions change (e.g. onLayout fires on web).
   useEffect(() => {
     if (session.loading) return;
+    const { width: w, height: h } = dimensionsRef.current;
+    if (w === 0 || h === 0) return;
     if (session.activeCalibration && scaleAtOne.value === 0 && image) {
       const cal = session.activeCalibration;
-      const renderScale = Math.min(
-        width / image.width(),
-        height / image.height(),
-      );
-      const restoredScaleAtOne = cal.intrinsicScale * renderScale;
+      const renderScale = Math.min(w / image.width(), h / image.height());
+      // intrinsicScale = inches/intrinsicPx
+      // scaleAtOne     = inches/screenPx  = intrinsicScale / renderScale
+      //                  (renderScale = screenPx/intrinsicPx, so divide)
+      const restoredScaleAtOne = cal.intrinsicScale / renderScale;
       restoreFromSession(restoredScaleAtOne, cal.intrinsicScale);
     }
-  }, [session.loading, session.activeCalibration?.id, image]);
+  }, [session.loading, session.activeCalibration?.id, image, width, height]);
 
   // 12. Show/hide calibration reference line toggle
   const [showCalibrationLine, setShowCalibrationLine] = useState(false);
@@ -425,6 +420,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   pendingMeasurementRef.current = pendingMeasurement;
   pendingDeleteRef.current = pendingDelete;
   imageRef.current = image;
+  dimensionsRef.current = { width, height };
 
   // 13. Convert calibration reference line to image-space coords if visible.
   //     Also rendered inside the zoom Group so it tracks the image.
@@ -450,8 +446,8 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   );
 
   return (
-    <View style={styles.container}>
-      {!image && (
+    <View style={styles.container} onLayout={handleLayout}>
+      {(!image || width === 0) && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FF8800" />
           <Text style={styles.loadingText}>

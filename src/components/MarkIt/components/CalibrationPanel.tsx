@@ -150,9 +150,18 @@ export function CalibrationPanel({
     );
   }
 
-  // --- Measure mode: toolbar icon top-right + optional panel ---
+  // --- Measure mode: toolbar icon top-right + optional panel + scale badge ---
   return (
     <View style={StyleSheet.absoluteFill} pointerEvents="box-none">
+      {/* Scale badge — top left, always visible when calibrated */}
+      {intrinsicScale !== null && intrinsicScale > 0 && (
+        <View style={styles.scaleBadge} pointerEvents="none">
+          <MaterialCommunityIcons name="ruler" size={13} color="#FF8800" />
+          <Text style={styles.scaleBadgeText}>
+            {refInput ? `${refInput} in ref` : `${intrinsicScale.toFixed(4)} in/px`}
+          </Text>
+        </View>
+      )}
       {/* Toolbar icon — top right */}
       <Pressable
         style={styles.toolbarIcon}
@@ -176,7 +185,7 @@ export function CalibrationPanel({
               </View>
               <Text style={styles.subtitle}>
                 {intrinsicScale
-                  ? `Scale: ${intrinsicScale.toFixed(5)} in/px`
+                  ? `${intrinsicScale.toFixed(5)} in/px`
                   : "No scale set"}
               </Text>
               {hasCalibrationLine && (
