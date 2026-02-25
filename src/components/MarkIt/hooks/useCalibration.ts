@@ -1,6 +1,6 @@
-import { useState } from "react";
-import type { SharedValue } from "react-native-reanimated";
 import type { SkImage } from "@shopify/react-native-skia";
+import { useRef, useState } from "react";
+import type { SharedValue } from "react-native-reanimated";
 
 export type CalibrationMode = "calibrate" | "measure";
 
@@ -20,13 +20,18 @@ export function useCalibration(
   width: number,
   height: number,
   zoomLevel: SharedValue<number>,
-  lastScreenPx: SharedValue<number>,  // written by useMeasureLine
-  scaleAtOne: SharedValue<number>,    // written here, read by useMeasureLine
-  lineColor: SharedValue<string>,     // written here, read by MeasureCanvas
+  lastScreenPx: SharedValue<number>, // written by useMeasureLine
+  scaleAtOne: SharedValue<number>, // written here, read by useMeasureLine
+  lineColor: SharedValue<string>, // written here, read by MeasureCanvas
+  isCalibrating: SharedValue<boolean>, // written here, read by useMeasureLine
 ) {
   const [mode, setMode] = useState<CalibrationMode>("calibrate");
   const [refInput, setRefInput] = useState("");
   const [intrinsicScale, setIntrinsicScale] = useState<number | null>(null);
+
+  // Keep a ref so confirmCalibration always sees current dimensions
+  const dimensionsRef = useRef({ width, height });
+  dimensionsRef.current = { width, height };
 
   /**
    * How many screen pixels equal one intrinsic image pixel under Skia's
@@ -34,8 +39,10 @@ export function useCalibration(
    */
   const getRenderScale = () => {
     if (!image) return 1;
-    const scaleX = width / image.width();
-    const scaleY = height / image.height();
+    const { width: w, height: h } = dimensionsRef.current;
+    if (w === 0 || h === 0) return 1;
+    const scaleX = w / image.width();
+    const scaleY = h / image.height();
     return Math.min(scaleX, scaleY);
   };
 
@@ -57,6 +64,7 @@ export function useCalibration(
     // This is what useMeasureLine uses on the UI thread
     scaleAtOne.value = realInches / screenPxAtOne;
     lineColor.value = "red";
+    isCalibrating.value = false;
 
     setMode("measure");
   };
@@ -67,6 +75,16 @@ export function useCalibration(
     setRefInput("");
     scaleAtOne.value = 0;
     lineColor.value = "orange";
+    isCalibrating.value = true;
+  };
+
+  /** Called on session replay — restores mode + display scale without recalculating. */
+  const restoreFromSession = (scale: number, intrinsicScaleVal: number) => {
+    scaleAtOne.value = scale;
+    lineColor.value = "red";
+    isCalibrating.value = false;
+    setIntrinsicScale(intrinsicScaleVal);
+    setMode("measure");
   };
 
   return {
@@ -76,5 +94,6 @@ export function useCalibration(
     intrinsicScale,
     confirmCalibration,
     recalibrate,
+    restoreFromSession,
   };
 }

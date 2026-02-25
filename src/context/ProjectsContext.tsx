@@ -1,10 +1,11 @@
 import { useAuth } from "@/src/context/AuthContext";
-import { CreateProjectInput, Project } from "@/src/types";
+import { CreateProjectInput, Project, ProjectFile } from "@/src/types";
 import {
   createProject,
   deleteProject,
   updateProject,
   watchProject,
+  watchProjectFiles,
   watchProjects,
 } from "@services/projects";
 import React, { createContext, useContext } from "react";
@@ -13,12 +14,15 @@ interface ProjectsContextType {
   loading: boolean;
   projects: Project[];
   project: Project | null;
+  /** Files for the currently watched project, from the files subcollection */
+  files: ProjectFile[];
   setLoading: (loading: boolean) => void;
   createProject: (data: Omit<CreateProjectInput, "ownerId">) => Promise<string>;
   updateProject: typeof updateProject;
   deleteProject: typeof deleteProject;
   watchProjects: () => () => void;
   watchProject: (projectId: string) => () => void;
+  watchProjectFiles: (projectId: string) => () => void;
 }
 
 const ProjectsContext = createContext<ProjectsContextType | undefined>(
@@ -30,6 +34,7 @@ export const ProjectsProvider = ({ children }) => {
   const [loading, setLoading] = React.useState(false);
   const [projects, setProjects] = React.useState<Project[]>([]);
   const [project, setProject] = React.useState<Project | null>(null);
+  const [files, setFiles] = React.useState<ProjectFile[]>([]);
 
   const handleCreateProject = async (
     data: Omit<CreateProjectInput, "ownerId">,
@@ -45,8 +50,9 @@ export const ProjectsProvider = ({ children }) => {
   const handleWatchProject = (projectId: string) => {
     return watchProject(projectId, setProject);
   };
-
-  // Note: createdAt and updatedAt are set by the service layer using server timestamps
+  const handleWatchProjectFiles = (projectId: string) => {
+    return watchProjectFiles(projectId, setFiles);
+  };
 
   return (
     <ProjectsContext.Provider
@@ -54,6 +60,7 @@ export const ProjectsProvider = ({ children }) => {
         loading,
         projects,
         project,
+        files,
         setProjects,
         setLoading,
         createProject: handleCreateProject,
@@ -61,6 +68,7 @@ export const ProjectsProvider = ({ children }) => {
         deleteProject,
         watchProjects: handleWatchedProjects,
         watchProject: handleWatchProject,
+        watchProjectFiles: handleWatchProjectFiles,
       }}
     >
       {children}

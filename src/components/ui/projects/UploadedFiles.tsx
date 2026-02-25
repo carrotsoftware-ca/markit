@@ -8,6 +8,7 @@ interface UploadedFile {
   filename: string;
   size: string;
   date: string;
+  url?: string;
   status?: "uploading" | "done" | "error";
 }
 
