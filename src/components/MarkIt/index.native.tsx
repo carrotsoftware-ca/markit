@@ -1,6 +1,8 @@
 import React from "react";
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
+  Platform,
   Text,
   StyleSheet,
   View,
@@ -88,7 +90,10 @@ export default function MarkIt({ imageUrl }: MarkItProps) {
   );
 
   return (
-    <View style={styles.container}>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === "ios" ? "padding" : "height"}
+    >
       {!image && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FF8800" />
@@ -122,7 +127,7 @@ export default function MarkIt({ imageUrl }: MarkItProps) {
         onConfirm={confirmCalibration}
         onRecalibrate={recalibrate}
       />
-    </View>
+    </KeyboardAvoidingView>
   );
 }
 
