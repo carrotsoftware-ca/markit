@@ -11,6 +11,7 @@ export async function login() {
   try {
     await GoogleSignin.hasPlayServices();
     const googleUser = await GoogleSignin.signIn();
+
     if (!googleUser || !googleUser.data) {
       // User cancelled sign-in
       return null;

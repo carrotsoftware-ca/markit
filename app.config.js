@@ -46,6 +46,7 @@ export default ({ config }) => ({
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: "com.carrotsoftware.markit",
+
     },
     web: {
       output: "static",
