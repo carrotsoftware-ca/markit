@@ -1,20 +1,23 @@
 import type {
-  AnimatedProp,
-  SkImage,
-  SkPoint,
-  Transforms3d,
+    AnimatedProp,
+    SkImage,
+    SkPoint,
+    Transforms3d,
 } from "@shopify/react-native-skia";
 import {
-  Canvas,
-  DashPathEffect,
-  Group,
-  Image,
-  Line,
-  Text,
-  useFont,
+    Canvas,
+    DashPathEffect,
+    Group,
+    Image,
+    Line,
+    RoundedRect,
+    Text,
+    useFont,
 } from "@shopify/react-native-skia";
 import React from "react";
 import type { SharedValue } from "react-native-reanimated";
+
+import { MeasurementLine } from "./MeasurementLine";
 
 /** A committed measurement line with pre-computed screen coordinates */
 export interface CommittedLine {
@@ -56,6 +59,12 @@ interface MeasureCanvasProps {
   calibrationLine?: CalibrationScreenLine | null;
 }
 
+// Fixed pill dimensions for the live in-progress label.
+// Wide enough for the longest expected label (e.g. "99' 11\"").
+const LIVE_PILL_W = 90;
+const LIVE_PILL_H = 28;
+const LIVE_PILL_PAD = 10;
+
 /**
  * Pure Skia drawing layer — NO hooks (except useFont which is safe).
  *
@@ -79,8 +88,8 @@ export function MeasureCanvas({
   calibrationLine,
 }: MeasureCanvasProps) {
   const font = useFont(
-    require("../../../../assets/fonts/space_grotesk/SpaceGrotesk-VariableFont_wght.ttf"),
-    16,
+    require("../../../../assets/fonts/space_grotesk/static/SpaceGrotesk-SemiBold.ttf"),
+    14,
   );
 
   return (
@@ -100,23 +109,7 @@ export function MeasureCanvas({
 
         {/* Committed measurement lines — image-space coords, track zoom/pan */}
         {committedLines.map((line) => (
-          <Group key={line.id}>
-            <Line
-              p1={{ x: line.x1, y: line.y1 }}
-              p2={{ x: line.x2, y: line.y2 }}
-              color="red"
-              strokeWidth={3}
-            />
-            {font && (
-              <Text
-                x={(line.x1 + line.x2) / 2}
-                y={(line.y1 + line.y2) / 2 - 10}
-                text={line.label}
-                font={font}
-                color="white"
-              />
-            )}
-          </Group>
+          <MeasurementLine key={line.id} line={line} font={font} />
         ))}
 
         {/* Calibration reference line — image-space coords, track zoom/pan */}
@@ -136,13 +129,32 @@ export function MeasureCanvas({
       <Group opacity={lineOpacity}>
         <Line p1={p1} p2={p2} color={lineColor} strokeWidth={3} />
         {font && (
-          <Text
-            x={labelX}
-            y={labelY}
-            text={distanceText}
-            font={font}
-            color="white"
-          />
+          <>
+            {/* Pill background — centred on labelX/labelY */}
+            <RoundedRect
+              x={labelX}
+              y={labelY}
+              width={LIVE_PILL_W}
+              height={LIVE_PILL_H}
+              r={8}
+              color="rgba(18, 24, 38, 0.85)"
+              transform={[
+                { translateX: -LIVE_PILL_W / 2 },
+                { translateY: -LIVE_PILL_H / 2 },
+              ]}
+            />
+            <Text
+              x={labelX}
+              y={labelY}
+              text={distanceText}
+              font={font}
+              color="white"
+              transform={[
+                { translateX: -LIVE_PILL_W / 2 + LIVE_PILL_PAD },
+                { translateY: LIVE_PILL_H / 2 - 4 },
+              ]}
+            />
+          </>
         )}
       </Group>
     </Canvas>

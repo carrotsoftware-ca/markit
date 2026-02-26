@@ -1,12 +1,12 @@
 import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    LayoutChangeEvent,
-    PixelRatio,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  LayoutChangeEvent,
+  PixelRatio,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
@@ -15,9 +15,9 @@ import { useMarkitSession } from "@/src/hooks/useMarkitSession";
 import { CalibrationPanel } from "./components/CalibrationPanel";
 import { DeleteMeasurementDialog } from "./components/DeleteMeasurementDialog";
 import {
-    CalibrationScreenLine,
-    CommittedLine,
-    MeasureCanvas,
+  CalibrationScreenLine,
+  CommittedLine,
+  MeasureCanvas,
 } from "./components/MeasureCanvas";
 import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import { useCalibration } from "./hooks/useCalibration";
@@ -25,8 +25,8 @@ import { useMarkItImage } from "./hooks/useMarkItImage";
 import { useMeasureLine } from "./hooks/useMeasureLine";
 import { useZoom } from "./hooks/useZoom";
 import {
-    normalizedToImageSpace,
-    screenToNormalized,
+  normalizedToImageSpace,
+  screenToNormalized,
 } from "./utils/coordTransform";
 import { formatInches, screenPxToInches } from "./utils/measureMath";
 
@@ -140,19 +140,18 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   } | null>(null);
   const pendingDeleteRef = useRef<typeof pendingDelete>(null);
 
-  // 8. Pending measurement — set when a line is drawn, cleared on save/discard.
-  //    The line stays visible on-canvas while this is set.
+  // 8. Pending measurement — a CommittedLine drawn locally, awaiting save/discard.
+  //    It renders immediately via MeasurementLine so there's a single code path.
+  //    Cleared on save (Firestore listener takes over) or discard (removed).
   const [pendingMeasurement, setPendingMeasurement] = useState<{
+    line: CommittedLine;
     normStart: { x: number; y: number };
     normEnd: { x: number; y: number };
-    distanceText: string;
   } | null>(null);
 
-  // Shared value that keeps the drawn line visible while a measurement is pending.
-  const keepLinePending = useSharedValue(false);
-
   // Called on the JS thread when the user lifts their finger after drawing.
-  // Stores the result as pending rather than saving immediately.
+  // Immediately converts the line to a CommittedLine and stores it as pending.
+  // The line is visible right away via MeasurementLine — no live-line overlap.
   const handleLineCommitted = (
     sx1: number,
     sy1: number,
@@ -183,6 +182,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       translateX.value,
       translateY.value,
     );
+
     const dx = sx2 - sx1;
     const dy = sy2 - sy1;
     const screenPx = Math.sqrt(dx * dx + dy * dy);
@@ -193,29 +193,40 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     );
     const distText = formatInches(inches);
 
-    // Keep the drawn line visible while the user decides
-    keepLinePending.value = true;
-    setPendingMeasurement({ normStart, normEnd, distanceText: distText });
+    const s1 = normalizedToImageSpace(normStart, image, w, h);
+    const s2 = normalizedToImageSpace(normEnd, image, w, h);
+
+    setPendingMeasurement({
+      line: {
+        id: `pending_${Date.now()}`,
+        x1: s1.x,
+        y1: s1.y,
+        x2: s2.x,
+        y2: s2.y,
+        label: distText,
+      },
+      normStart,
+      normEnd,
+    });
   };
 
   const handleSaveMeasurement = () => {
     if (!pendingMeasurement || !projectId || !fileId) {
-      keepLinePending.value = false;
       setPendingMeasurement(null);
       return;
     }
+    // Fire-and-forget — the line is already on screen. Firestore's real-time
+    // listener will assign it a permanent id; until then the pending line shows.
     session.addEvent({
       type: "measurement",
       start: pendingMeasurement.normStart,
       end: pendingMeasurement.normEnd,
-      distanceText: pendingMeasurement.distanceText,
+      distanceText: pendingMeasurement.line.label,
     } as any);
-    keepLinePending.value = false;
     setPendingMeasurement(null);
   };
 
   const handleDiscardMeasurement = () => {
-    keepLinePending.value = false;
     setPendingMeasurement(null);
   };
 
@@ -314,13 +325,9 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     });
 
   // 9. 1-finger draw gesture + live distance label.
-  //    handleLineCommitted is passed as a callback so the gesture bridges
-  //    back to the JS thread via runOnJS internally.
-  //    keepLineVisible: line stays on screen while calibrating OR while a
-  //    measurement is pending confirmation.
-  const keepLineVisible = useDerivedValue(
-    () => isCalibrating.value || keepLinePending.value,
-  );
+  //    In measure mode the live line only shows while the finger is down.
+  //    In calibrate mode keepVisible keeps it showing as a preview.
+  const keepLineVisible = useDerivedValue(() => isCalibrating.value);
 
   const {
     drawGesture,
@@ -444,10 +451,9 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   // 12. Convert committed measurement events from the event log to image-space
   //     coords (zoom=1, tx=0, ty=0). These are rendered INSIDE the zoom Group
   //     in MeasureCanvas so they track the image automatically at any zoom/pan.
-  const committedLines: CommittedLine[] = (session.measurements ?? []).flatMap(
+  const firestoreLines: CommittedLine[] = (session.measurements ?? []).flatMap(
     (evt) => {
       if (!image) return [];
-      // Skip events with corrupt distanceText from old test runs
       if (
         !evt.distanceText ||
         evt.distanceText.includes("NaN") ||
@@ -456,10 +462,27 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
         return [];
       const s1 = normalizedToImageSpace(evt.start, image, width, height);
       const s2 = normalizedToImageSpace(evt.end, image, width, height);
-      const label = evt.distanceText;
-      return [{ id: evt.id, x1: s1.x, y1: s1.y, x2: s2.x, y2: s2.y, label }];
+      return [
+        {
+          id: evt.id,
+          x1: s1.x,
+          y1: s1.y,
+          x2: s2.x,
+          y2: s2.y,
+          label: evt.distanceText,
+        },
+      ];
     },
   );
+
+  // Include the pending line while the user decides — it renders via
+  // MeasurementLine just like any committed line, so there's a single
+  // visual path. Once Firestore's listener adds the real event, the
+  // pending entry (id starts with "pending_") is no longer added.
+  const pendingLine = pendingMeasurement?.line ?? null;
+  const committedLines: CommittedLine[] = pendingLine
+    ? [...firestoreLines, pendingLine]
+    : firestoreLines;
 
   // Keep all gesture refs current on every render.
   committedLinesRef.current = committedLines;
@@ -535,7 +558,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
 
       {pendingMeasurement && (
         <MeasurementConfirmBar
-          distanceText={pendingMeasurement.distanceText}
+          distanceText={pendingMeasurement.line.label}
           onSave={handleSaveMeasurement}
           onDiscard={handleDiscardMeasurement}
         />

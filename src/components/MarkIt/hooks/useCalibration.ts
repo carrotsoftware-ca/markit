@@ -70,7 +70,7 @@ export function useCalibration(
 
     // This is what useMeasureLine uses on the UI thread
     scaleAtOne.value = realInches / screenPxAtOne;
-    lineColor.value = "red";
+    lineColor.value = "orange";
     isCalibrating.value = false;
 
     setMode("measure");
@@ -88,7 +88,7 @@ export function useCalibration(
   /** Called on session replay — restores mode + display scale without recalculating. */
   const restoreFromSession = (scale: number, intrinsicScaleVal: number) => {
     scaleAtOne.value = scale;
-    lineColor.value = "red";
+    lineColor.value = "orange";
     isCalibrating.value = false;
     setIntrinsicScale(intrinsicScaleVal);
     setMode("measure");
