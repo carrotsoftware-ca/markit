@@ -2,9 +2,9 @@ import { vec } from "@shopify/react-native-skia";
 import { Gesture } from "react-native-gesture-handler";
 import type { SharedValue } from "react-native-reanimated";
 import {
-    runOnJS,
-    useDerivedValue,
-    useSharedValue,
+  runOnJS,
+  useDerivedValue,
+  useSharedValue,
 } from "react-native-reanimated";
 
 import { formatInches, screenPxToInches } from "../utils/measureMath";
@@ -49,7 +49,9 @@ export function useMeasureLine(
       start.value = { x: e.x, y: e.y };
       end.value = { x: e.x, y: e.y };
       isActive.value = false;
-      hasLine.value = false;
+      // Don't clear hasLine here — wait until the user actually starts moving.
+      // Clearing on onBegin causes the calibration preview line to vanish the
+      // moment the user taps the TextInput or the confirm button.
     })
     .onUpdate((e) => {
       end.value = { x: e.x, y: e.y };
@@ -57,6 +59,7 @@ export function useMeasureLine(
       const dy = e.y - start.value.y;
       if (dx * dx + dy * dy > 16) {
         isActive.value = true;
+        hasLine.value = false; // clear previous line only once they start a real draw
       }
     })
     .onEnd(() => {
