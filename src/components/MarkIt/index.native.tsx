@@ -14,21 +14,15 @@ import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 import { useMarkitSession } from "@/src/hooks/useMarkitSession";
 import { CalibrationPanel } from "./components/CalibrationPanel";
 import { DeleteMeasurementDialog } from "./components/DeleteMeasurementDialog";
-import {
-  CalibrationScreenLine,
-  CommittedLine,
-  MeasureCanvas,
-} from "./components/MeasureCanvas";
+import { CalibrationScreenLine, CommittedLine, MeasureCanvas } from "./components/MeasureCanvas";
 import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import { useCalibration } from "./hooks/useCalibration";
 import { useMarkItImage } from "./hooks/useMarkItImage";
 import { useMeasureLine } from "./hooks/useMeasureLine";
+import { useMeasurementManager } from "./hooks/useMeasurementManager";
+import { useTapToDelete } from "./hooks/useTapToDelete";
 import { useZoom } from "./hooks/useZoom";
-import {
-  normalizedToImageSpace,
-  screenToNormalized,
-} from "./utils/coordTransform";
-import { formatInches, screenPxToInches } from "./utils/measureMath";
+import { normalizedToImageSpace, screenToNormalized } from "./utils/coordTransform";
 
 interface MarkItProps {
   imageUrl?: string;
@@ -75,8 +69,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   const isCalibrating = useSharedValue(true);
 
   // 4. Zoom + pan + double-tap reset
-  const { zoomLevel, translateX, translateY, zoomGesture, doubleTapGesture } =
-    useZoom();
+  const { zoomLevel, translateX, translateY, zoomGesture, doubleTapGesture } = useZoom();
 
   // 5. All derived (animated) values created at top level — worklets are never
   //    re-registered because this component renders exactly once per mount.
@@ -96,11 +89,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   const imageHeight = useDerivedValue(() => heightSV.value);
 
   // 6. Firestore event session — no-op when projectId/fileId are absent
-  const session = useMarkitSession(
-    projectId ?? "",
-    fileId ?? "",
-    !!(projectId && fileId),
-  );
+  const session = useMarkitSession(projectId ?? "", fileId ?? "", !!(projectId && fileId));
 
   // 7. Calibration state machine (zoom-aware)
   const {
@@ -123,230 +112,65 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     isCalibrating,
   );
 
-  // Stable ref that always holds the latest committedLines array.
-  // Initialized here (before any gesture callbacks) so the tap-to-delete
-  // closure always finds a valid ref object, even on the first render.
-  const committedLinesRef = useRef<CommittedLine[]>([]);
   // Stable refs for values used inside gesture callbacks — avoids stale closures.
+  const committedLinesRef = useRef<CommittedLine[]>([]);
   const modeRef = useRef(mode);
-  const pendingMeasurementRef = useRef<typeof pendingMeasurement>(null);
   const imageRef = useRef(image);
-  // Dimensions ref — keeps width/height current so callbacks never see 0×0
   const dimensionsRef = useRef({ width, height });
-  // Pending delete — set when the user taps a committed line, cleared on confirm/cancel.
-  const [pendingDelete, setPendingDelete] = useState<{
-    id: string;
-    distanceText: string;
-  } | null>(null);
-  const pendingDeleteRef = useRef<typeof pendingDelete>(null);
 
-  // 8. Pending measurement — a CommittedLine drawn locally, awaiting save/discard.
-  //    It renders immediately via MeasurementLine so there's a single code path.
-  //    Cleared on save (Firestore listener takes over) or discard (removed).
-  const [pendingMeasurement, setPendingMeasurement] = useState<{
-    line: CommittedLine;
-    normStart: { x: number; y: number };
-    normEnd: { x: number; y: number };
-  } | null>(null);
+  // 8. Measurement state: pending save and pending delete, plus all handlers.
+  const {
+    pendingMeasurement,
+    pendingDelete,
+    setPendingDelete,
+    handleLineCommitted,
+    handleSaveMeasurement,
+    handleDiscardMeasurement,
+    handleDeleteMeasurement,
+  } = useMeasurementManager({
+    image,
+    mode,
+    dimensions: dimensionsRef.current,
+    zoomLevel,
+    translateX,
+    translateY,
+    scaleAtOne,
+    session,
+    projectId,
+    fileId,
+  });
 
-  // Called on the JS thread when the user lifts their finger after drawing.
-  // Immediately converts the line to a CommittedLine and stores it as pending.
-  // The line is visible right away via MeasurementLine — no live-line overlap.
-  const handleLineCommitted = (
-    sx1: number,
-    sy1: number,
-    sx2: number,
-    sy2: number,
-  ) => {
-    if (!image || mode !== "measure") return;
-    const { width: w, height: h } = dimensionsRef.current;
-    if (w === 0 || h === 0) return;
+  const pendingMeasurementRef = useRef(pendingMeasurement);
+  const pendingDeleteRef = useRef(pendingDelete);
 
-    const normStart = screenToNormalized(
-      sx1,
-      sy1,
-      image,
-      w,
-      h,
-      zoomLevel.value,
-      translateX.value,
-      translateY.value,
-    );
-    const normEnd = screenToNormalized(
-      sx2,
-      sy2,
-      image,
-      w,
-      h,
-      zoomLevel.value,
-      translateX.value,
-      translateY.value,
-    );
+  // 9. Tap-to-delete gesture.
+  const { tapToDeleteGesture } = useTapToDelete({
+    modeRef,
+    pendingMeasurementRef,
+    pendingDeleteRef,
+    imageRef,
+    committedLinesRef,
+    dimensionsRef,
+    zoomLevel,
+    translateX,
+    translateY,
+    setPendingDelete,
+  });
 
-    const dx = sx2 - sx1;
-    const dy = sy2 - sy1;
-    const screenPx = Math.sqrt(dx * dx + dy * dy);
-    const inches = screenPxToInches(
-      screenPx,
-      scaleAtOne.value,
-      zoomLevel.value,
-    );
-    const distText = formatInches(inches);
-
-    const s1 = normalizedToImageSpace(normStart, image, w, h);
-    const s2 = normalizedToImageSpace(normEnd, image, w, h);
-
-    setPendingMeasurement({
-      line: {
-        id: `pending_${Date.now()}`,
-        x1: s1.x,
-        y1: s1.y,
-        x2: s2.x,
-        y2: s2.y,
-        label: distText,
-      },
-      normStart,
-      normEnd,
-    });
-  };
-
-  const handleSaveMeasurement = () => {
-    if (!pendingMeasurement || !projectId || !fileId) {
-      setPendingMeasurement(null);
-      return;
-    }
-    // Fire-and-forget — the line is already on screen. Firestore's real-time
-    // listener will assign it a permanent id; until then the pending line shows.
-    session.addEvent({
-      type: "measurement",
-      start: pendingMeasurement.normStart,
-      end: pendingMeasurement.normEnd,
-      distanceText: pendingMeasurement.line.label,
-    } as any);
-    setPendingMeasurement(null);
-  };
-
-  const handleDiscardMeasurement = () => {
-    setPendingMeasurement(null);
-  };
-
-  // Delete a committed measurement by its id (soft-delete via event log).
-  const handleDeleteMeasurement = async (id: string) => {
-    if (!projectId || !fileId) return;
-    await session.addEvent({ type: "delete", targetEventId: id } as any);
-    setPendingDelete(null);
-  };
-
-  // Single-tap on a committed line deletes it.
-  // All JS values are read from refs to avoid stale closure bugs.
-  // Both the tap and the committed line coords are in the same space:
-  // canvas pixels at zoom=1, tx=0, ty=0 (what normalizedToImageSpace returns).
-  const HIT_THRESHOLD_SCREEN_PX = 24;
-  const tapToDeleteGesture = Gesture.Tap()
-    .maxDuration(300)
-    .runOnJS(true)
-    .onEnd((e) => {
-      const currentMode = modeRef.current;
-      const currentPending = pendingMeasurementRef.current;
-      const currentImage = imageRef.current;
-      const lines = committedLinesRef.current;
-
-      if (currentMode !== "measure" || currentPending !== null) return;
-      if (pendingDeleteRef.current !== null) return;
-      if (!currentImage || lines.length === 0) return;
-
-      const { width: w, height: h } = dimensionsRef.current;
-      if (w === 0 || h === 0) return;
-
-      // Convert tap → canvas coords at zoom=1 (same space as committedLines)
-      const tapUnzoomed = screenToNormalized(
-        e.x,
-        e.y,
-        currentImage,
-        w,
-        h,
-        zoomLevel.value,
-        translateX.value,
-        translateY.value,
-      );
-      // Back to image-space pixels at zoom=1 (matches normalizedToImageSpace)
-      const pr = PixelRatio.get();
-      const renderScale = Math.min(
-        w / (currentImage.width() / pr),
-        h / (currentImage.height() / pr),
-      );
-      const renderedW = (currentImage.width() / pr) * renderScale;
-      const renderedH = (currentImage.height() / pr) * renderScale;
-      const rect = {
-        x: (w - renderedW) / 2,
-        y: (h - renderedH) / 2,
-        w: renderedW,
-        h: renderedH,
-      };
-      const tapX = tapUnzoomed.x * rect.w + rect.x;
-      const tapY = tapUnzoomed.y * rect.h + rect.y;
-
-      // Hit threshold in the same canvas-at-zoom-1 space, scaled to feel
-      // like a constant number of screen pixels regardless of zoom.
-      const hitThreshold = HIT_THRESHOLD_SCREEN_PX / zoomLevel.value;
-
-      let closest: string | null = null;
-      let closestDist = hitThreshold;
-
-      for (const line of lines) {
-        const dx = line.x2 - line.x1;
-        const dy = line.y2 - line.y1;
-        const lenSq = dx * dx + dy * dy;
-        let dist: number;
-        if (lenSq === 0) {
-          dist = Math.sqrt((tapX - line.x1) ** 2 + (tapY - line.y1) ** 2);
-        } else {
-          const t = Math.max(
-            0,
-            Math.min(
-              1,
-              ((tapX - line.x1) * dx + (tapY - line.y1) * dy) / lenSq,
-            ),
-          );
-          dist = Math.sqrt(
-            (tapX - (line.x1 + t * dx)) ** 2 + (tapY - (line.y1 + t * dy)) ** 2,
-          );
-        }
-        if (dist < closestDist) {
-          closestDist = dist;
-          closest = line.id;
-        }
-      }
-
-      if (closest !== null) {
-        const line = lines.find((l) => l.id === closest);
-        setPendingDelete({ id: closest, distanceText: line?.label ?? "" });
-      }
-    });
-
-  // 9. 1-finger draw gesture + live distance label.
-  //    In measure mode the live line only shows while the finger is down.
-  //    In calibrate mode keepVisible keeps it showing as a preview.
+  // 10. 1-finger draw gesture + live distance label.
+  //     In measure mode the live line only shows while the finger is down.
+  //     In calibrate mode keepVisible keeps it showing as a preview.
   const keepLineVisible = useDerivedValue(() => isCalibrating.value);
 
-  const {
-    drawGesture,
-    distanceText,
-    start,
-    end,
-    p1,
-    p2,
-    labelX,
-    labelY,
-    lineOpacity,
-  } = useMeasureLine(
-    scaleAtOne,
-    zoomLevel,
-    lastScreenPx,
-    lastZoom,
-    handleLineCommitted,
-    keepLineVisible,
-  );
+  const { drawGesture, distanceText, start, end, p1, p2, labelX, labelY, lineOpacity } =
+    useMeasureLine(
+      scaleAtOne,
+      zoomLevel,
+      lastScreenPx,
+      lastZoom,
+      handleLineCommitted,
+      keepLineVisible,
+    );
 
   // 10. Wrap confirmCalibration to also persist calibration events to Firestore
   const handleConfirmCalibration = async () => {
@@ -394,12 +218,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       const scale = realInches / intrinsicPx;
 
       // Guard: don't write corrupt events if inputs are invalid
-      if (
-        !isFinite(scale) ||
-        scale <= 0 ||
-        !isFinite(realInches) ||
-        realInches <= 0
-      ) {
+      if (!isFinite(scale) || scale <= 0 || !isFinite(realInches) || realInches <= 0) {
         confirmCalibration();
         return;
       }
@@ -451,29 +270,27 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   // 12. Convert committed measurement events from the event log to image-space
   //     coords (zoom=1, tx=0, ty=0). These are rendered INSIDE the zoom Group
   //     in MeasureCanvas so they track the image automatically at any zoom/pan.
-  const firestoreLines: CommittedLine[] = (session.measurements ?? []).flatMap(
-    (evt) => {
-      if (!image) return [];
-      if (
-        !evt.distanceText ||
-        evt.distanceText.includes("NaN") ||
-        evt.distanceText.includes("Infinity")
-      )
-        return [];
-      const s1 = normalizedToImageSpace(evt.start, image, width, height);
-      const s2 = normalizedToImageSpace(evt.end, image, width, height);
-      return [
-        {
-          id: evt.id,
-          x1: s1.x,
-          y1: s1.y,
-          x2: s2.x,
-          y2: s2.y,
-          label: evt.distanceText,
-        },
-      ];
-    },
-  );
+  const firestoreLines: CommittedLine[] = (session.measurements ?? []).flatMap((evt) => {
+    if (!image) return [];
+    if (
+      !evt.distanceText ||
+      evt.distanceText.includes("NaN") ||
+      evt.distanceText.includes("Infinity")
+    )
+      return [];
+    const s1 = normalizedToImageSpace(evt.start, image, width, height);
+    const s2 = normalizedToImageSpace(evt.end, image, width, height);
+    return [
+      {
+        id: evt.id,
+        x1: s1.x,
+        y1: s1.y,
+        x2: s2.x,
+        y2: s2.y,
+        label: evt.distanceText,
+      },
+    ];
+  });
 
   // Include the pending line while the user decides — it renders via
   // MeasurementLine just like any committed line, so there's a single
@@ -520,9 +337,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       {(!image || width === 0) && (
         <View style={styles.loadingOverlay}>
           <ActivityIndicator size="large" color="#FF8800" />
-          <Text style={styles.loadingText}>
-            {imageUrl ? "Loading image..." : "No image URL"}
-          </Text>
+          <Text style={styles.loadingText}>{imageUrl ? "Loading image..." : "No image URL"}</Text>
         </View>
       )}
 
