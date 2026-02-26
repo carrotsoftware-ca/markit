@@ -1,8 +1,4 @@
-import {
-  MarkitMode,
-  PendingDelete,
-  PendingMeasurement
-} from "@/src/components/MarkIt/types";
+import { MarkitMode, PendingDelete, PendingMeasurement } from "@/src/components/MarkIt/types";
 import {
   normalizedToImageSpace,
   screenToNormalized,
@@ -16,7 +12,7 @@ import { SharedValue } from "react-native-reanimated";
 interface MeasurementManagerArgs {
   image: SkImage | null;
   mode: MarkitMode;
-  dimensions: { width: number; height: number };
+  dimensionsRef: React.RefObject<{ width: number; height: number }>;
   zoomLevel: SharedValue<number>;
   translateX: SharedValue<number>;
   translateY: SharedValue<number>;
@@ -29,7 +25,7 @@ interface MeasurementManagerArgs {
 export function useMeasurementManager({
   image,
   mode,
-  dimensions,
+  dimensionsRef,
   zoomLevel,
   translateX,
   translateY,
@@ -43,7 +39,7 @@ export function useMeasurementManager({
 
   const handleLineCommitted = (sx1: number, sy1: number, sx2: number, sy2: number) => {
     if (!image || mode !== "measure") return;
-    const { width: w, height: h } = dimensions;
+    const { width: w, height: h } = dimensionsRef.current;
     if (w === 0 || h === 0) return;
 
     const normStart = screenToNormalized(

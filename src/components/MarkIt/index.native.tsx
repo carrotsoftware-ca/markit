@@ -1,13 +1,6 @@
 import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useRef, useState } from "react";
-import {
-  ActivityIndicator,
-  LayoutChangeEvent,
-  PixelRatio,
-  StyleSheet,
-  Text,
-  View,
-} from "react-native";
+import { ActivityIndicator, LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
@@ -17,12 +10,14 @@ import { DeleteMeasurementDialog } from "./components/DeleteMeasurementDialog";
 import { CalibrationScreenLine, CommittedLine, MeasureCanvas } from "./components/MeasureCanvas";
 import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import { useCalibration } from "./hooks/useCalibration";
+import { useCalibrationManager } from "./hooks/useCalibrationManager";
+import { useCommittedLines } from "./hooks/useCommittedLines";
 import { useMarkItImage } from "./hooks/useMarkItImage";
 import { useMeasureLine } from "./hooks/useMeasureLine";
 import { useMeasurementManager } from "./hooks/useMeasurementManager";
 import { useTapToDelete } from "./hooks/useTapToDelete";
 import { useZoom } from "./hooks/useZoom";
-import { normalizedToImageSpace, screenToNormalized } from "./utils/coordTransform";
+import { normalizedToImageSpace } from "./utils/coordTransform";
 
 interface MarkItProps {
   imageUrl?: string;
@@ -130,7 +125,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   } = useMeasurementManager({
     image,
     mode,
-    dimensions: dimensionsRef.current,
+    dimensionsRef,
     zoomLevel,
     translateX,
     translateY,
@@ -172,134 +167,38 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       keepLineVisible,
     );
 
-  // 10. Wrap confirmCalibration to also persist calibration events to Firestore
-  const handleConfirmCalibration = async () => {
-    if (image && projectId && fileId) {
-      const { width: w, height: h } = dimensionsRef.current;
-
-      // If there are any existing events (recalibration), clear them all first
-      const hasExistingEvents =
-        !!session.activeCalibration ||
-        !!session.activeCalibrationLine ||
-        session.measurements.length > 0;
-      if (hasExistingEvents) {
-        await session.clearEvents();
-      }
-
-      const calLineId = `${Date.now()}_cal_line`;
-      const normStart = screenToNormalized(
-        start.value.x,
-        start.value.y,
-        image,
-        w,
-        h,
-        zoomLevel.value,
-        translateX.value,
-        translateY.value,
-      );
-      const normEnd = screenToNormalized(
-        end.value.x,
-        end.value.y,
-        image,
-        w,
-        h,
-        zoomLevel.value,
-        translateX.value,
-        translateY.value,
-      );
-
-      const renderScale = Math.min(
-        w / (image.width() / PixelRatio.get()),
-        h / (image.height() / PixelRatio.get()),
-      );
-      const screenPxAtOne = lastScreenPx.value / zoomLevel.value;
-      const intrinsicPx = screenPxAtOne / renderScale;
-      const realInches = parseFloat(refInput);
-      const scale = realInches / intrinsicPx;
-
-      // Guard: don't write corrupt events if inputs are invalid
-      if (!isFinite(scale) || scale <= 0 || !isFinite(realInches) || realInches <= 0) {
-        confirmCalibration();
-        return;
-      }
-
-      // Write calibration_line first, then calibration_confirmed referencing it
-      session
-        .addEvent({
-          type: "calibration_line",
-          id: calLineId,
-          start: normStart,
-          end: normEnd,
-        } as any)
-        .then(() =>
-          session.addEvent({
-            type: "calibration_confirmed",
-            intrinsicScale: scale,
-            refInput,
-            calibrationLineEventId: calLineId,
-          } as any),
-        );
-    }
-    confirmCalibration();
-  };
-
-  // 11. When events load from Firestore and a calibration already exists,
-  //     restore scaleAtOne + lineColor so committed lines show correct labels.
-  //     Also re-runs when dimensions change (e.g. onLayout fires on web).
-  useEffect(() => {
-    if (session.loading) return;
-    const { width: w, height: h } = dimensionsRef.current;
-    if (w === 0 || h === 0) return;
-    if (session.activeCalibration && scaleAtOne.value === 0 && image) {
-      const cal = session.activeCalibration;
-      const renderScale = Math.min(
-        w / (image.width() / PixelRatio.get()),
-        h / (image.height() / PixelRatio.get()),
-      );
-      // intrinsicScale = inches/intrinsicPx
-      // scaleAtOne     = inches/screenPx  = intrinsicScale / renderScale
-      //                  (renderScale = screenPx/intrinsicPx, so divide)
-      const restoredScaleAtOne = cal.intrinsicScale / renderScale;
-      restoreFromSession(restoredScaleAtOne, cal.intrinsicScale);
-    }
-  }, [session.loading, session.activeCalibration?.id, image, width, height]);
+  // 11. Calibration confirm handler + session restore effect.
+  const { handleConfirmCalibration } = useCalibrationManager({
+    image,
+    dimensionsRef,
+    width,
+    height,
+    session,
+    start,
+    end,
+    zoomLevel,
+    translateX,
+    translateY,
+    lastScreenPx,
+    scaleAtOne,
+    refInput,
+    confirmCalibration,
+    restoreFromSession,
+    projectId,
+    fileId,
+  });
 
   // 12. Show/hide calibration reference line toggle
   const [showCalibrationLine, setShowCalibrationLine] = useState(false);
 
-  // 12. Convert committed measurement events from the event log to image-space
-  //     coords (zoom=1, tx=0, ty=0). These are rendered INSIDE the zoom Group
-  //     in MeasureCanvas so they track the image automatically at any zoom/pan.
-  const firestoreLines: CommittedLine[] = (session.measurements ?? []).flatMap((evt) => {
-    if (!image) return [];
-    if (
-      !evt.distanceText ||
-      evt.distanceText.includes("NaN") ||
-      evt.distanceText.includes("Infinity")
-    )
-      return [];
-    const s1 = normalizedToImageSpace(evt.start, image, width, height);
-    const s2 = normalizedToImageSpace(evt.end, image, width, height);
-    return [
-      {
-        id: evt.id,
-        x1: s1.x,
-        y1: s1.y,
-        x2: s2.x,
-        y2: s2.y,
-        label: evt.distanceText,
-      },
-    ];
+  // 13. Derive committed lines from Firestore events + pending measurement.
+  const committedLines = useCommittedLines({
+    session,
+    image,
+    width,
+    height,
+    pendingMeasurement,
   });
-
-  // Include the pending line while the user decides — it renders via
-  // MeasurementLine just like any committed line, so there's a single
-  // visual path. Once Firestore's listener adds the real event, the
-  // pending entry (id starts with "pending_") is no longer added.
-  const pendingLine = pendingMeasurement?.line ?? null;
-  const committedLines: CommittedLine[] = pendingLine
-    ? [...firestoreLines, pendingLine]
-    : firestoreLines;
 
   // Keep all gesture refs current on every render.
   committedLinesRef.current = committedLines;
