@@ -12,7 +12,20 @@
           "package_name": "com.carrotsoftware.markit"
         }
       },
-      "oauth_client": [],
+      "oauth_client": [
+        {
+          "client_id": "784107784111-rmco5du0ctv1b29ur4rcl3kmmddl9b2d.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.carrotsoftware.markit",
+            "certificate_hash": "2528f3df29abb2d27f2d1fe7b1be9c0b66e1f351"
+          }
+        },
+        {
+          "client_id": "784107784111-fol4un4avfj9a4qj2bq0rr4oa2s0t2i5.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
       "api_key": [
         {
           "current_key": "AIzaSyA7UzvJaZy58IwyA8C1KY1IgRS002tI5No"
@@ -20,7 +33,20 @@
       ],
       "services": {
         "appinvite_service": {
-          "other_platform_oauth_client": []
+          "other_platform_oauth_client": [
+            {
+              "client_id": "784107784111-fol4un4avfj9a4qj2bq0rr4oa2s0t2i5.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "784107784111-71gu2f8f3hnm508e1aqg1rvuqpi8c44f.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.carrotsoftware.markit",
+                "app_store_id": "6759472397"
+              }
+            }
+          ]
         }
       }
     }
