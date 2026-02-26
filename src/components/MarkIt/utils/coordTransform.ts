@@ -1,27 +1,31 @@
 import type { NormalizedPoint } from "@/src/types";
 import type { SkImage } from "@shopify/react-native-skia";
+import { PixelRatio } from "react-native";
 
 /**
  * Computes the rendered image rect under Skia's "contain" (letter-box) fit.
  *
- * Skia scales the image uniformly to fill as much of the canvas as possible
- * without cropping. The result may have horizontal or vertical bars.
- *
- * Returns the top-left origin and rendered dimensions in screen pixels.
+ * image.width()/height() return physical pixels. canvasWidth/Height are
+ * logical points (from onLayout). We divide image dimensions by PixelRatio
+ * so both are in the same unit before computing the scale.
  */
 function getRenderedImageRect(
   image: SkImage,
   canvasWidth: number,
   canvasHeight: number,
 ): { x: number; y: number; w: number; h: number } {
-  const scaleX = canvasWidth / image.width();
-  const scaleY = canvasHeight / image.height();
+  const pr = PixelRatio.get();
+  const imgW = image.width() / pr;
+  const imgH = image.height() / pr;
+
+  const scaleX = canvasWidth / imgW;
+  const scaleY = canvasHeight / imgH;
   const scale = Math.min(scaleX, scaleY); // "contain"
 
-  const w = image.width() * scale;
-  const h = image.height() * scale;
-  const x = (canvasWidth - w) / 2; // centre horizontally
-  const y = (canvasHeight - h) / 2; // centre vertically
+  const w = imgW * scale;
+  const h = imgH * scale;
+  const x = (canvasWidth - w) / 2;
+  const y = (canvasHeight - h) / 2;
 
   return { x, y, w, h };
 }

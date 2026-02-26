@@ -25,6 +25,7 @@ export function useMeasureLine(
   scaleAtOne: SharedValue<number>,
   zoomLevel: SharedValue<number>,
   lastScreenPx: SharedValue<number>,
+  lastZoom: SharedValue<number>,
   onLineCommitted?: (
     startX: number,
     startY: number,
@@ -62,6 +63,10 @@ export function useMeasureLine(
       const dx = end.value.x - start.value.x;
       const dy = end.value.y - start.value.y;
       lastScreenPx.value = Math.sqrt(dx * dx + dy * dy);
+      // Snapshot zoom on the UI thread at the exact moment of finger-up.
+      // confirmCalibration() reads lastZoom (not zoomLevel) so it always
+      // uses the zoom that was active when the line was drawn.
+      lastZoom.value = zoomLevel.value;
       isActive.value = false;
       hasLine.value = keepVisible ? keepVisible.value : false;
       // Bridge back to JS thread so the caller can persist without

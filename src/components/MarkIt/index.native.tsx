@@ -1,11 +1,12 @@
 import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  LayoutChangeEvent,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    LayoutChangeEvent,
+    PixelRatio,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
@@ -14,9 +15,9 @@ import { useMarkitSession } from "@/src/hooks/useMarkitSession";
 import { CalibrationPanel } from "./components/CalibrationPanel";
 import { DeleteMeasurementDialog } from "./components/DeleteMeasurementDialog";
 import {
-  CalibrationScreenLine,
-  CommittedLine,
-  MeasureCanvas,
+    CalibrationScreenLine,
+    CommittedLine,
+    MeasureCanvas,
 } from "./components/MeasureCanvas";
 import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import { useCalibration } from "./hooks/useCalibration";
@@ -24,8 +25,8 @@ import { useMarkItImage } from "./hooks/useMarkItImage";
 import { useMeasureLine } from "./hooks/useMeasureLine";
 import { useZoom } from "./hooks/useZoom";
 import {
-  normalizedToImageSpace,
-  screenToNormalized,
+    normalizedToImageSpace,
+    screenToNormalized,
 } from "./utils/coordTransform";
 import { formatInches, screenPxToInches } from "./utils/measureMath";
 
@@ -65,6 +66,10 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   // 3. Shared values threaded between hooks to avoid circular dependencies
   const scaleAtOne = useSharedValue(0);
   const lastScreenPx = useSharedValue(0);
+  // Zoom snapshotted on the UI thread at the exact moment the calibration/
+  // measurement line finger-up fires — avoids reading a stale or mid-animation
+  // zoomLevel from the JS thread when the confirm button is pressed.
+  const lastZoom = useSharedValue(1);
   const lineColor = useSharedValue<string>("orange");
   // True during calibrate mode — keeps the last drawn line visible as a preview
   const isCalibrating = useSharedValue(true);
@@ -112,6 +117,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     height,
     zoomLevel,
     lastScreenPx,
+    lastZoom,
     scaleAtOne,
     lineColor,
     isCalibrating,
@@ -158,12 +164,24 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     if (w === 0 || h === 0) return;
 
     const normStart = screenToNormalized(
-      sx1, sy1, image, w, h,
-      zoomLevel.value, translateX.value, translateY.value,
+      sx1,
+      sy1,
+      image,
+      w,
+      h,
+      zoomLevel.value,
+      translateX.value,
+      translateY.value,
     );
     const normEnd = screenToNormalized(
-      sx2, sy2, image, w, h,
-      zoomLevel.value, translateX.value, translateY.value,
+      sx2,
+      sy2,
+      image,
+      w,
+      h,
+      zoomLevel.value,
+      translateX.value,
+      translateY.value,
     );
     const dx = sx2 - sx1;
     const dy = sy2 - sy1;
@@ -231,13 +249,23 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
 
       // Convert tap → canvas coords at zoom=1 (same space as committedLines)
       const tapUnzoomed = screenToNormalized(
-        e.x, e.y, currentImage, w, h,
-        zoomLevel.value, translateX.value, translateY.value,
+        e.x,
+        e.y,
+        currentImage,
+        w,
+        h,
+        zoomLevel.value,
+        translateX.value,
+        translateY.value,
       );
       // Back to image-space pixels at zoom=1 (matches normalizedToImageSpace)
-      const renderScale = Math.min(w / currentImage.width(), h / currentImage.height());
-      const renderedW = currentImage.width() * renderScale;
-      const renderedH = currentImage.height() * renderScale;
+      const pr = PixelRatio.get();
+      const renderScale = Math.min(
+        w / (currentImage.width() / pr),
+        h / (currentImage.height() / pr),
+      );
+      const renderedW = (currentImage.width() / pr) * renderScale;
+      const renderedH = (currentImage.height() / pr) * renderScale;
       const rect = {
         x: (w - renderedW) / 2,
         y: (h - renderedH) / 2,
@@ -308,6 +336,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     scaleAtOne,
     zoomLevel,
     lastScreenPx,
+    lastZoom,
     handleLineCommitted,
     keepLineVisible,
   );
@@ -328,15 +357,27 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
 
       const calLineId = `${Date.now()}_cal_line`;
       const normStart = screenToNormalized(
-        start.value.x, start.value.y, image, w, h,
-        zoomLevel.value, translateX.value, translateY.value,
+        start.value.x,
+        start.value.y,
+        image,
+        w,
+        h,
+        zoomLevel.value,
+        translateX.value,
+        translateY.value,
       );
       const normEnd = screenToNormalized(
-        end.value.x, end.value.y, image, w, h,
-        zoomLevel.value, translateX.value, translateY.value,
+        end.value.x,
+        end.value.y,
+        image,
+        w,
+        h,
+        zoomLevel.value,
+        translateX.value,
+        translateY.value,
       );
 
-      const renderScale = Math.min(w / image.width(), h / image.height());
+      const renderScale = Math.min(w / (image.width() / PixelRatio.get()), h / (image.height() / PixelRatio.get()));
       const screenPxAtOne = lastScreenPx.value / zoomLevel.value;
       const intrinsicPx = screenPxAtOne / renderScale;
       const realInches = parseFloat(refInput);
@@ -382,7 +423,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     if (w === 0 || h === 0) return;
     if (session.activeCalibration && scaleAtOne.value === 0 && image) {
       const cal = session.activeCalibration;
-      const renderScale = Math.min(w / image.width(), h / image.height());
+      const renderScale = Math.min(w / (image.width() / PixelRatio.get()), h / (image.height() / PixelRatio.get()));
       // intrinsicScale = inches/intrinsicPx
       // scaleAtOne     = inches/screenPx  = intrinsicScale / renderScale
       //                  (renderScale = screenPx/intrinsicPx, so divide)
