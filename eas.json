@@ -9,6 +9,9 @@
       "distribution": "internal",
       "ios": {
         "credentialsSource": "local"
+      },
+      "android": {
+        "credentialsSource": "local"
       }
     },
     "preview": {
@@ -20,6 +23,9 @@
     "production": {
       "distribution": "store",
       "ios": {
+        "credentialsSource": "local"
+      },
+      "android": {
         "credentialsSource": "local"
       }
     }
