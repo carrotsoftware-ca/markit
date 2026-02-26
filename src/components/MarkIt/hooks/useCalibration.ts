@@ -22,7 +22,7 @@ export function useCalibration(
   height: number,
   zoomLevel: SharedValue<number>,
   lastScreenPx: SharedValue<number>, // written by useMeasureLine
-  lastZoom: SharedValue<number>,     // zoom snapshotted at finger-up by useMeasureLine
+  lastZoom: SharedValue<number>, // zoom snapshotted at finger-up by useMeasureLine
   scaleAtOne: SharedValue<number>, // written here, read by useMeasureLine
   lineColor: SharedValue<string>, // written here, read by MeasureCanvas
   isCalibrating: SharedValue<boolean>, // written here, read by useMeasureLine

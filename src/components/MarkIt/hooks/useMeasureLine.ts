@@ -2,9 +2,9 @@ import { vec } from "@shopify/react-native-skia";
 import { Gesture } from "react-native-gesture-handler";
 import type { SharedValue } from "react-native-reanimated";
 import {
-  runOnJS,
-  useDerivedValue,
-  useSharedValue,
+    runOnJS,
+    useDerivedValue,
+    useSharedValue,
 } from "react-native-reanimated";
 
 import { formatInches, screenPxToInches } from "../utils/measureMath";

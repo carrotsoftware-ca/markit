@@ -377,7 +377,10 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
         translateY.value,
       );
 
-      const renderScale = Math.min(w / (image.width() / PixelRatio.get()), h / (image.height() / PixelRatio.get()));
+      const renderScale = Math.min(
+        w / (image.width() / PixelRatio.get()),
+        h / (image.height() / PixelRatio.get()),
+      );
       const screenPxAtOne = lastScreenPx.value / zoomLevel.value;
       const intrinsicPx = screenPxAtOne / renderScale;
       const realInches = parseFloat(refInput);
@@ -423,7 +426,10 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     if (w === 0 || h === 0) return;
     if (session.activeCalibration && scaleAtOne.value === 0 && image) {
       const cal = session.activeCalibration;
-      const renderScale = Math.min(w / (image.width() / PixelRatio.get()), h / (image.height() / PixelRatio.get()));
+      const renderScale = Math.min(
+        w / (image.width() / PixelRatio.get()),
+        h / (image.height() / PixelRatio.get()),
+      );
       // intrinsicScale = inches/intrinsicPx
       // scaleAtOne     = inches/screenPx  = intrinsicScale / renderScale
       //                  (renderScale = screenPx/intrinsicPx, so divide)
