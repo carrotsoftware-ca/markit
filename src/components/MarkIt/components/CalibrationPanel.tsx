@@ -1,19 +1,19 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
-  Keyboard,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
+    Keyboard,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    TouchableOpacity,
+    View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withTiming,
 } from "react-native-reanimated";
 
 import type { CalibrationMode } from "../hooks/useCalibration";
@@ -158,7 +158,9 @@ export function CalibrationPanel({
         <View style={styles.scaleBadge} pointerEvents="none">
           <MaterialCommunityIcons name="ruler" size={13} color="#FF8800" />
           <Text style={styles.scaleBadgeText}>
-            {refInput ? `${refInput} in ref` : `${intrinsicScale.toFixed(4)} in/px`}
+            {refInput
+              ? `${refInput} in ref`
+              : `${intrinsicScale.toFixed(4)} in/px`}
           </Text>
         </View>
       )}

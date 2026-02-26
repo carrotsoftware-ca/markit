@@ -31,6 +31,8 @@ export default ({ config }) => ({
           "Allow markit to access your photo library to upload images and videos to your projects.",
         NSMicrophoneUsageDescription:
           "Allow markit to access your microphone for video uploads.",
+        NSCameraUsageDescription:
+          "Allow markit to access your camera to photograph job sites for measurement.",
       },
     },
     android: {
@@ -71,6 +73,8 @@ export default ({ config }) => ({
             "Allow markit to access your photo library to upload images and videos to your projects.",
           microphonePermission:
             "Allow markit to access your microphone for video uploads.",
+          cameraPermission:
+            "Allow markit to access your camera to photograph job sites for measurement.",
         },
       ],
       "expo-router",

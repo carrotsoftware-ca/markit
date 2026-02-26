@@ -8,7 +8,7 @@ export async function uploadProjectFile(
   filename: string,
   mimeType: string | undefined,
   fileSize: number | undefined,
-): Promise<void> {
+): Promise<{ fileId: string; url: string }> {
   const fileId = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
   const storagePath = `projects/${projectId}/${fileId}`;
   const storageRef = getStorage().ref(storagePath);
@@ -55,4 +55,6 @@ export async function uploadProjectFile(
 
   // Update just the status + url fields on the file doc — no array juggling needed
   await fileRef.update({ status: "done", url });
+
+  return { fileId, url };
 }

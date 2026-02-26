@@ -1,5 +1,6 @@
 import type { SkImage } from "@shopify/react-native-skia";
 import { useRef, useState } from "react";
+import { PixelRatio } from "react-native";
 import type { SharedValue } from "react-native-reanimated";
 
 export type CalibrationMode = "calibrate" | "measure";
@@ -21,6 +22,7 @@ export function useCalibration(
   height: number,
   zoomLevel: SharedValue<number>,
   lastScreenPx: SharedValue<number>, // written by useMeasureLine
+  lastZoom: SharedValue<number>, // zoom snapshotted at finger-up by useMeasureLine
   scaleAtOne: SharedValue<number>, // written here, read by useMeasureLine
   lineColor: SharedValue<string>, // written here, read by MeasureCanvas
   isCalibrating: SharedValue<boolean>, // written here, read by useMeasureLine
@@ -41,8 +43,9 @@ export function useCalibration(
     if (!image) return 1;
     const { width: w, height: h } = dimensionsRef.current;
     if (w === 0 || h === 0) return 1;
-    const scaleX = w / image.width();
-    const scaleY = h / image.height();
+    const pr = PixelRatio.get();
+    const scaleX = w / (image.width() / pr);
+    const scaleY = h / (image.height() / pr);
     return Math.min(scaleX, scaleY);
   };
 
@@ -53,8 +56,12 @@ export function useCalibration(
 
     const zoom = zoomLevel.value;
 
-    // Zoom-corrected: normalise the drawn line to what it would be at zoom 1×
-    const screenPxAtOne = screenPx / zoom;
+    // Zoom-corrected: normalise the drawn line to what it would be at zoom 1×.
+    // Use lastZoom (snapshotted on UI thread at finger-up) rather than reading
+    // zoomLevel now — the spring animation may have settled to a different value
+    // by the time the user presses the confirm button.
+    const zoomAtDraw = lastZoom.value > 0 ? lastZoom.value : zoom;
+    const screenPxAtOne = screenPx / zoomAtDraw;
 
     // Store intrinsic scale for display in the panel
     const renderScale = getRenderScale();

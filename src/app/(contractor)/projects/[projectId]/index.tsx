@@ -7,6 +7,7 @@ import {
 } from "@/src/components/ui/projects";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
+import { takePhoto } from "@/src/hooks/useCamera";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
 import { pickMedia } from "@/src/hooks/useMediaPicker";
 import { deleteProjectFile, uploadProjectFile } from "@/src/services/projects";
@@ -39,13 +40,33 @@ export default function ProjectDetailsScreen() {
   const handleUpload = async () => {
     const media = await pickMedia();
     if (!media) return;
-    await uploadProjectFile(
+    const { fileId, url } = await uploadProjectFile(
       projectId as string,
       media.uri,
       media.filename,
       media.mimeType,
       media.fileSize,
     );
+    router.push({
+      pathname: "/(contractor)/projects/measure",
+      params: { fileUrl: url, projectId: projectId as string, fileId },
+    });
+  };
+
+  const handleCamera = async () => {
+    const photo = await takePhoto();
+    if (!photo) return;
+    const { fileId, url } = await uploadProjectFile(
+      projectId as string,
+      photo.uri,
+      photo.filename,
+      photo.mimeType,
+      photo.fileSize,
+    );
+    router.push({
+      pathname: "/(contractor)/projects/measure",
+      params: { fileUrl: url, projectId: projectId as string, fileId },
+    });
   };
 
   const handleFilePress = (fileId: string) => {
@@ -113,7 +134,7 @@ export default function ProjectDetailsScreen() {
               description={project?.description}
               client_email={project?.client_email}
             />
-            <ProjectAssets onUpload={handleUpload} />
+            <ProjectAssets onUpload={handleUpload} onCamera={handleCamera} />
             <UploadedFiles
               files={files}
               onFileMenu={handleFileMenu}
