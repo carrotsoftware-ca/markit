@@ -1,18 +1,18 @@
 import type {
-  AnimatedProp,
-  SkImage,
-  SkPoint,
-  Transforms3d,
+    AnimatedProp,
+    SkImage,
+    SkPoint,
+    Transforms3d,
 } from "@shopify/react-native-skia";
 import {
-  Canvas,
-  DashPathEffect,
-  Group,
-  Image,
-  Line,
-  RoundedRect,
-  Text,
-  useFont,
+    Canvas,
+    DashPathEffect,
+    Group,
+    Image,
+    Line,
+    RoundedRect,
+    Text,
+    useFont,
 } from "@shopify/react-native-skia";
 import React from "react";
 import type { SharedValue } from "react-native-reanimated";
@@ -138,7 +138,10 @@ export function MeasureCanvas({
               height={LIVE_PILL_H}
               r={8}
               color="rgba(18, 24, 38, 0.85)"
-              transform={[{ translateX: -LIVE_PILL_W / 2 }, { translateY: -LIVE_PILL_H / 2 }]}
+              transform={[
+                { translateX: -LIVE_PILL_W / 2 },
+                { translateY: -LIVE_PILL_H / 2 },
+              ]}
             />
             <Text
               x={labelX}
@@ -146,7 +149,10 @@ export function MeasureCanvas({
               text={distanceText}
               font={font}
               color="white"
-              transform={[{ translateX: -LIVE_PILL_W / 2 + LIVE_PILL_PAD }, { translateY: LIVE_PILL_H / 2 - 4 }]}
+              transform={[
+                { translateX: -LIVE_PILL_W / 2 + LIVE_PILL_PAD },
+                { translateY: LIVE_PILL_H / 2 - 4 },
+              ]}
             />
           </>
         )}

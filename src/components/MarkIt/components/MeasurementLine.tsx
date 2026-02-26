@@ -1,10 +1,5 @@
-import {
-  Group,
-  Line,
-  RoundedRect,
-  Text,
-} from "@shopify/react-native-skia";
 import type { SkFont } from "@shopify/react-native-skia";
+import { Group, Line, RoundedRect, Text } from "@shopify/react-native-skia";
 import React from "react";
 import { Platform } from "react-native";
 
@@ -37,7 +32,9 @@ export function MeasurementLine({ line, font }: Props) {
 
   // measureText is not implemented on web — use a fixed fallback width instead
   const textWidth =
-    font && Platform.OS !== "web" ? font.measureText(label).width : label.length * 8;
+    font && Platform.OS !== "web"
+      ? font.measureText(label).width
+      : label.length * 8;
   const pillW = textWidth + PILL_PADDING_X * 2;
   const pillX = mx - pillW / 2;
   const pillY = my - PILL_H - 6; // 6px gap above midpoint

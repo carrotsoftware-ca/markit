@@ -1,12 +1,12 @@
 import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    ActivityIndicator,
-    LayoutChangeEvent,
-    PixelRatio,
-    StyleSheet,
-    Text,
-    View,
+  ActivityIndicator,
+  LayoutChangeEvent,
+  PixelRatio,
+  StyleSheet,
+  Text,
+  View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
@@ -15,9 +15,9 @@ import { useMarkitSession } from "@/src/hooks/useMarkitSession";
 import { CalibrationPanel } from "./components/CalibrationPanel";
 import { DeleteMeasurementDialog } from "./components/DeleteMeasurementDialog";
 import {
-    CalibrationScreenLine,
-    CommittedLine,
-    MeasureCanvas,
+  CalibrationScreenLine,
+  CommittedLine,
+  MeasureCanvas,
 } from "./components/MeasureCanvas";
 import { MeasurementConfirmBar } from "./components/MeasurementConfirmBar";
 import { useCalibration } from "./hooks/useCalibration";
@@ -25,8 +25,8 @@ import { useMarkItImage } from "./hooks/useMarkItImage";
 import { useMeasureLine } from "./hooks/useMeasureLine";
 import { useZoom } from "./hooks/useZoom";
 import {
-    normalizedToImageSpace,
-    screenToNormalized,
+  normalizedToImageSpace,
+  screenToNormalized,
 } from "./utils/coordTransform";
 import { formatInches, screenPxToInches } from "./utils/measureMath";
 
@@ -162,20 +162,49 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     const { width: w, height: h } = dimensionsRef.current;
     if (w === 0 || h === 0) return;
 
-    const normStart = screenToNormalized(sx1, sy1, image, w, h, zoomLevel.value, translateX.value, translateY.value);
-    const normEnd   = screenToNormalized(sx2, sy2, image, w, h, zoomLevel.value, translateX.value, translateY.value);
+    const normStart = screenToNormalized(
+      sx1,
+      sy1,
+      image,
+      w,
+      h,
+      zoomLevel.value,
+      translateX.value,
+      translateY.value,
+    );
+    const normEnd = screenToNormalized(
+      sx2,
+      sy2,
+      image,
+      w,
+      h,
+      zoomLevel.value,
+      translateX.value,
+      translateY.value,
+    );
 
     const dx = sx2 - sx1;
     const dy = sy2 - sy1;
     const screenPx = Math.sqrt(dx * dx + dy * dy);
-    const inches = screenPxToInches(screenPx, scaleAtOne.value, zoomLevel.value);
+    const inches = screenPxToInches(
+      screenPx,
+      scaleAtOne.value,
+      zoomLevel.value,
+    );
     const distText = formatInches(inches);
 
     const s1 = normalizedToImageSpace(normStart, image, w, h);
     const s2 = normalizedToImageSpace(normEnd, image, w, h);
 
     setPendingMeasurement({
-      line: { id: `pending_${Date.now()}`, x1: s1.x, y1: s1.y, x2: s2.x, y2: s2.y, label: distText },
+      line: {
+        id: `pending_${Date.now()}`,
+        x1: s1.x,
+        y1: s1.y,
+        x2: s2.x,
+        y2: s2.y,
+        label: distText,
+      },
       normStart,
       normEnd,
     });
@@ -433,7 +462,16 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
         return [];
       const s1 = normalizedToImageSpace(evt.start, image, width, height);
       const s2 = normalizedToImageSpace(evt.end, image, width, height);
-      return [{ id: evt.id, x1: s1.x, y1: s1.y, x2: s2.x, y2: s2.y, label: evt.distanceText }];
+      return [
+        {
+          id: evt.id,
+          x1: s1.x,
+          y1: s1.y,
+          x2: s2.x,
+          y2: s2.y,
+          label: evt.distanceText,
+        },
+      ];
     },
   );
 
