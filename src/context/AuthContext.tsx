@@ -19,6 +19,7 @@ const AuthContext = createContext<AuthStateType>({
   isReady: false,
   login: () => {},
   logout: () => {},
+  register: () => {},
 });
 
 const authenticators = {
@@ -47,6 +48,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     } catch (error) {
       console.log(error)
     }finally{
+      setIsLoggedIn(true);
+      setUser(userData);
+      router.replace("/");
+    }
+  };
+
+  const register = async (credentials: { email: string; password: string }) => {
+    const userData = await emailAuth.register(credentials);
+    if (!userData) return;
+    userData.authenticatorType = "email";
+    try {
+      await upsertUser(userData);
+    } catch (error) {
+      console.log(error);
+    } finally {
       setIsLoggedIn(true);
       setUser(userData);
       router.replace("/");
@@ -95,6 +111,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoggedIn,
         login,
         logout,
+        register,
         getUser,
         insertUser,
         upsertUser,
