@@ -87,11 +87,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       }
     }
 
-    const unsubscribe = getAuth().onAuthStateChanged((user) => {
-      // Anonymous users are portal clients — they should not be treated as
-      // logged-in contractors. Only real (non-anonymous) accounts get access
-      // to the contractor app.
+    const unsubscribe = getAuth().onAuthStateChanged(async (user) => {
+      // Anonymous users and portal custom-token users should not be treated as
+      // logged-in contractors. Check for the `portal` claim we stamp on every
+      // custom token minted by getPortalCustomToken.
       if (user && !user.isAnonymous) {
+        const idTokenResult = await user.getIdTokenResult();
+        if (idTokenResult.claims.portal) {
+          // Portal client — treat as logged-out contractor
+          setIsLoggedIn(false);
+          setUser(null);
+          setIsReady(true);
+          return;
+        }
         setIsLoggedIn(true);
         setUser({
           id: user.uid,

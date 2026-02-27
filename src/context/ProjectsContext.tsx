@@ -1,12 +1,12 @@
 import { useAuth } from "@/src/context/AuthContext";
 import { CreateProjectInput, Project, ProjectFile } from "@/src/types";
 import {
-  createProject,
-  deleteProject,
-  updateProject,
-  watchProject,
-  watchProjectFiles,
-  watchProjects,
+    createProject,
+    deleteProject,
+    updateProject,
+    watchProject,
+    watchProjectFiles,
+    watchProjects,
 } from "@services/projects";
 import React, { createContext, useContext } from "react";
 
@@ -25,9 +25,7 @@ interface ProjectsContextType {
   watchProjectFiles: (projectId: string) => () => void;
 }
 
-const ProjectsContext = createContext<ProjectsContextType | undefined>(
-  undefined,
-);
+const ProjectsContext = createContext<ProjectsContextType | undefined>(undefined);
 
 export const ProjectsProvider = ({ children }) => {
   const { user } = useAuth();
