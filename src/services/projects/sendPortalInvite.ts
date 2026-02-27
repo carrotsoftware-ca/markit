@@ -25,6 +25,9 @@ export async function generatePortalToken(projectId: string): Promise<string> {
  * first opens their portal link. Also records a portalSession for this device.
  * Safe to call multiple times — only transitions status when still in draft.
  */
-export async function activatePortal(token: string, platform: "web" | "ios" | "android" = "web"): Promise<void> {
+export async function activatePortal(
+  token: string,
+  platform: "web" | "ios" | "android" = "web",
+): Promise<void> {
   await getFunctions().httpsCallable("activatePortal")({ token, platform });
 }
