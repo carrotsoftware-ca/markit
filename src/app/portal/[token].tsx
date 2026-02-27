@@ -181,7 +181,10 @@ export default function PortalPage() {
 
     const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
     if (status !== "granted") {
-      Alert.alert("Permission needed", "Please allow access to your photo library to upload files.");
+      Alert.alert(
+        "Permission needed",
+        "Please allow access to your photo library to upload files.",
+      );
       return;
     }
 

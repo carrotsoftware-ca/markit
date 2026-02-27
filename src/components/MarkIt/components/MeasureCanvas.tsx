@@ -1,9 +1,4 @@
-import type {
-    AnimatedProp,
-    SkImage,
-    SkPoint,
-    Transforms3d,
-} from "@shopify/react-native-skia";
+import type { AnimatedProp, SkImage, SkPoint, Transforms3d } from "@shopify/react-native-skia";
 import {
     Canvas,
     DashPathEffect,
@@ -43,6 +38,7 @@ interface MeasureCanvasProps {
   // index.native.tsx and passed in. This component has zero hooks so it
   // can never trigger a worklet re-registration on re-render.
   zoomTransform: SharedValue<Transforms3d>;
+  zoomLevel: SharedValue<number>;
   imageWidth: SharedValue<number>;
   imageHeight: SharedValue<number>;
   // Live in-progress measurement line
@@ -75,6 +71,7 @@ const LIVE_PILL_PAD = 10;
 export function MeasureCanvas({
   image,
   zoomTransform,
+  zoomLevel,
   imageWidth,
   imageHeight,
   p1,
@@ -97,19 +94,12 @@ export function MeasureCanvas({
       {/* Layer 1 + 2 + 3: image and all stored lines inside the zoom/pan transform */}
       <Group transform={zoomTransform}>
         {image && (
-          <Image
-            image={image}
-            x={0}
-            y={0}
-            width={imageWidth}
-            height={imageHeight}
-            fit="contain"
-          />
+          <Image image={image} x={0} y={0} width={imageWidth} height={imageHeight} fit="contain" />
         )}
 
         {/* Committed measurement lines — image-space coords, track zoom/pan */}
         {committedLines.map((line) => (
-          <MeasurementLine key={line.id} line={line} font={font} />
+          <MeasurementLine key={line.id} line={line} font={font} zoomLevel={zoomLevel} />
         ))}
 
         {/* Calibration reference line — image-space coords, track zoom/pan */}
@@ -138,10 +128,7 @@ export function MeasureCanvas({
               height={LIVE_PILL_H}
               r={8}
               color="rgba(18, 24, 38, 0.85)"
-              transform={[
-                { translateX: -LIVE_PILL_W / 2 },
-                { translateY: -LIVE_PILL_H / 2 },
-              ]}
+              transform={[{ translateX: -LIVE_PILL_W / 2 }, { translateY: -LIVE_PILL_H / 2 }]}
             />
             <Text
               x={labelX}
