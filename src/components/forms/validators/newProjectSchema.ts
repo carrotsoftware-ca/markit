@@ -12,7 +12,9 @@ const newProjectSchema = yup.object().shape({
   client_email: yup
     .string()
     .email("Must be a valid email")
-    .required("Client email is required"),
+    .optional()
+    .nullable()
+    .transform((v) => v || null),
   emailNotifications: yup
     .boolean()
     .required(),

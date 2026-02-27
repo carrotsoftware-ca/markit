@@ -57,8 +57,20 @@ service cloud.firestore {
         // Owner: full read/write
         allow read, write: if isProjectOwner(projectId);
 
-        // Portal: read only, token must be valid
+        // Portal: read existing files
         allow read: if isValidPortalToken(projectId);
+
+        // Portal: create new file documents (client uploads).
+        // Must have the required fields; status must start as "uploading".
+        // update/delete remain locked — only the owner can modify existing docs.
+        allow create: if isValidPortalToken(projectId)
+                      && request.resource.data.keys().hasAll(["filename", "status", "size", "date", "storagePath"])
+                      && request.resource.data.status == "uploading";
+
+        // Portal: update status + url only — finalize an upload in progress.
+        // Prevents clients from modifying filenames, storagePaths, etc.
+        allow update: if isValidPortalToken(projectId)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "url", "progress"]);
 
         // -----------------------------------------------------------------------
         // Events subcollection — append-only, no updates or hard deletes.
@@ -71,13 +83,29 @@ service cloud.firestore {
           // No one can update or hard-delete an event
           allow update, delete: if false;
 
-          // Portal: read valid events + append measurement events only.
-          // Field validation prevents portal clients from writing fake
-          // calibration, delete, or other privileged event types.
+          // Portal: read valid events + append events.
+          // Allowed types: measurement, calibration_line, calibration_confirmed,
+          // and soft-delete. Hard writes of arbitrary fields are still blocked
+          // by the per-type field checks below.
           allow read: if isValidPortalToken(projectId);
           allow create: if isValidPortalToken(projectId)
-                        && request.resource.data.type == "measurement"
-                        && request.resource.data.keys().hasAll(["type", "start", "end", "createdAt"]);
+                        && (
+                          // Measurement event
+                          (request.resource.data.type == "measurement"
+                            && request.resource.data.keys().hasAll(["type", "start", "end", "createdAt", "distanceText"]))
+                          ||
+                          // Calibration line event
+                          (request.resource.data.type == "calibration_line"
+                            && request.resource.data.keys().hasAll(["type", "start", "end", "createdAt"]))
+                          ||
+                          // Calibration confirmed event
+                          (request.resource.data.type == "calibration_confirmed"
+                            && request.resource.data.keys().hasAll(["type", "intrinsicScale", "refInput", "calibrationLineEventId", "createdAt"]))
+                          ||
+                          // Soft delete event
+                          (request.resource.data.type == "delete"
+                            && request.resource.data.keys().hasAll(["type", "targetEventId", "createdAt"]))
+                        );
         }
       }
     }

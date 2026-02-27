@@ -2,13 +2,16 @@ import {
   getPortalEvents,
   getPortalFiles,
   getProjectByToken,
+  uploadPortalFile,
 } from "@/src/services/projects/getPortalProject";
 import { activatePortal } from "@/src/services/projects/sendPortalInvite";
 import { MarkitEvent, Project, ProjectFile } from "@/src/types";
+import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useLayoutEffect, useState } from "react";
 import {
   ActivityIndicator,
+  Alert,
   Image,
   Pressable,
   ScrollView,
@@ -87,6 +90,8 @@ function FileRow({ file, measurementCount, onPress }: FileRowProps) {
 
 type FileWithEvents = { file: ProjectFile; events: MarkitEvent[] };
 
+type UploadState = { filename: string; progress: number; done: boolean };
+
 export default function PortalPage() {
   const { token } = useLocalSearchParams<{ token: string }>();
   const router = useRouter();
@@ -95,6 +100,7 @@ export default function PortalPage() {
   const [revoked, setRevoked] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
   const [items, setItems] = useState<FileWithEvents[]>([]);
+  const [uploads, setUploads] = useState<UploadState[]>([]);
 
   useEffect(() => {
     if (!token) return;
@@ -170,6 +176,69 @@ export default function PortalPage() {
     });
   };
 
+  const handleUpload = async () => {
+    if (!project) return;
+
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== "granted") {
+      Alert.alert("Permission needed", "Please allow access to your photo library to upload files.");
+      return;
+    }
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ["images"],
+      allowsMultipleSelection: true,
+      quality: 0.9,
+    });
+
+    if (result.canceled || result.assets.length === 0) return;
+
+    for (const asset of result.assets) {
+      const filename = asset.fileName ?? asset.uri.split("/").pop() ?? `photo_${Date.now()}.jpg`;
+      const uploadKey = filename;
+
+      setUploads((prev) => [...prev, { filename, progress: 0, done: false }]);
+
+      try {
+        await uploadPortalFile(
+          project.id,
+          asset.uri,
+          filename,
+          asset.mimeType ?? "image/jpeg",
+          asset.fileSize,
+          (pct) => {
+            setUploads((prev) =>
+              prev.map((u) => (u.filename === uploadKey ? { ...u, progress: pct } : u)),
+            );
+          },
+        );
+
+        setUploads((prev) =>
+          prev.map((u) => (u.filename === uploadKey ? { ...u, progress: 100, done: true } : u)),
+        );
+
+        // Refresh the file list after a brief pause so the new file appears
+        setTimeout(async () => {
+          if (!project) return;
+          const files = await getPortalFiles(project.id);
+          const doneFiles = files.filter((f) => f.status === "done");
+          const withEvents = await Promise.all(
+            doneFiles.map(async (file) => {
+              const events = await getPortalEvents(project.id, file.id);
+              return { file, events };
+            }),
+          );
+          setItems(withEvents);
+          setUploads((prev) => prev.filter((u) => u.filename !== uploadKey));
+        }, 1500);
+      } catch (err) {
+        console.error("Portal upload error:", err);
+        setUploads((prev) => prev.filter((u) => u.filename !== uploadKey));
+        Alert.alert("Upload failed", "Something went wrong uploading that file. Please try again.");
+      }
+    }
+  };
+
   // File list view
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
@@ -192,7 +261,7 @@ export default function PortalPage() {
       <View style={styles.divider} />
 
       {/* File list */}
-      {items.length === 0 ? (
+      {items.length === 0 && uploads.length === 0 ? (
         <Text style={styles.emptyText}>No files have been added to this project yet.</Text>
       ) : (
         <View style={styles.fileList}>
@@ -208,8 +277,35 @@ export default function PortalPage() {
               />
             );
           })}
+
+          {/* In-progress uploads */}
+          {uploads.map((u) => (
+            <View key={u.filename} style={styles.uploadRow}>
+              <View style={styles.thumb}>
+                <ActivityIndicator size="small" color={ORANGE} />
+              </View>
+              <View style={styles.fileRowInfo}>
+                <Text style={styles.fileRowName} numberOfLines={1}>
+                  {u.filename}
+                </Text>
+                <View style={styles.progressTrack}>
+                  <View style={[styles.progressFill, { width: `${u.progress}%` as any }]} />
+                </View>
+                <Text style={styles.fileRowMeta}>{u.done ? "Processing…" : `${u.progress}%`}</Text>
+              </View>
+            </View>
+          ))}
         </View>
       )}
+
+      {/* Upload button */}
+      <Pressable
+        onPress={handleUpload}
+        style={({ pressed }) => [styles.uploadButton, pressed && styles.uploadButtonPressed]}
+      >
+        <Text style={styles.uploadButtonIcon}>＋</Text>
+        <Text style={styles.uploadButtonLabel}>Upload Photos</Text>
+      </Pressable>
 
       <Text style={styles.footer}>Powered by markit!</Text>
     </ScrollView>
@@ -299,4 +395,38 @@ const styles = StyleSheet.create({
   revokedIcon: { fontSize: 48, marginBottom: 16 },
   revokedTitle: { fontSize: 22, fontWeight: "bold", color: TEXT, marginBottom: 8 },
   revokedSub: { fontSize: 15, color: MUTED, textAlign: "center", maxWidth: 320 },
+
+  // Upload button
+  uploadButton: {
+    flexDirection: "row",
+    alignItems: "center",
+    justifyContent: "center",
+    marginHorizontal: 24,
+    marginTop: 16,
+    paddingVertical: 14,
+    borderRadius: 12,
+    backgroundColor: ORANGE,
+  },
+  uploadButtonPressed: { opacity: 0.8 },
+  uploadButtonIcon: { color: "#fff", fontSize: 20, fontWeight: "bold", marginRight: 8 },
+  uploadButtonLabel: { color: "#fff", fontWeight: "700", fontSize: 16 },
+
+  // In-progress upload row
+  uploadRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2e2e2e",
+  },
+  progressTrack: {
+    height: 4,
+    backgroundColor: "#333",
+    borderRadius: 2,
+    marginTop: 6,
+    marginBottom: 4,
+    overflow: "hidden",
+  },
+  progressFill: { height: 4, backgroundColor: ORANGE, borderRadius: 2 },
 });

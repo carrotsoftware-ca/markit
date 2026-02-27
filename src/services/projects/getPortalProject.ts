@@ -1,5 +1,6 @@
-import { getFirestore } from "@/src/services/firebase";
+import { getFirestore, getStorage } from "@/src/services/firebase";
 import { MarkitEvent, Project, ProjectFile } from "@/src/types";
+import { Platform } from "react-native";
 
 /**
  * Fetches a project by its portal token.
@@ -53,4 +54,60 @@ export async function getPortalEvents(projectId: string, fileId: string): Promis
     id: doc.id,
     ...(doc.data() as Omit<MarkitEvent, "id">),
   }));
+}
+
+/**
+ * Uploads a file to a project from the portal (unauthenticated).
+ * Storage rules allow portal writes when portalActive == true.
+ * Progress is reported via the onProgress callback (0–100).
+ */
+export async function uploadPortalFile(
+  projectId: string,
+  localUri: string,
+  filename: string,
+  mimeType: string | undefined,
+  fileSize: number | undefined,
+  onProgress?: (pct: number) => void,
+): Promise<{ fileId: string; url: string }> {
+  const fileId = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
+  const storagePath = `projects/${projectId}/${fileId}`;
+  const storageRef = getStorage().ref(storagePath);
+  const db = getFirestore();
+
+  const fileRef = db.collection("projects").doc(projectId).collection("files").doc(fileId);
+
+  const optimisticFile: ProjectFile = {
+    id: fileId,
+    filename,
+    size: fileSize ? `${(fileSize / 1024).toFixed(0)} KB` : "—",
+    date: new Date().toLocaleDateString("en-US", {
+      month: "short",
+      day: "numeric",
+      year: "numeric",
+    }),
+    status: "uploading",
+    url: "",
+    storagePath,
+    ...(mimeType !== undefined && { mimeType }),
+  };
+  await fileRef.set(optimisticFile);
+
+  if (Platform.OS === "web") {
+    const response = await fetch(localUri);
+    const blob = await response.blob();
+    await storageRef.put(blob, mimeType ? { contentType: mimeType } : undefined);
+  } else {
+    const task = storageRef.putFile(localUri);
+    if (onProgress) {
+      task.on("state_changed", (snapshot: any) => {
+        const pct = Math.round((snapshot.bytesTransferred / snapshot.totalBytes) * 100);
+        onProgress(pct);
+      });
+    }
+    await task;
+  }
+
+  const url = await storageRef.getDownloadURL();
+  await fileRef.update({ status: "done", url });
+  return { fileId, url };
 }
