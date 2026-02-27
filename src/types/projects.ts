@@ -34,6 +34,14 @@ export interface Project {
   portalActive?: boolean; // kill switch — set to false to revoke access instantly
 }
 
+export interface PortalSession {
+  uid: string;
+  email: string | null;
+  platforms: Array<"web" | "ios" | "android">;
+  firstSeenAt: any; // Firestore Timestamp
+  lastSeenAt: any; // Firestore Timestamp
+}
+
 export type CreateProjectInput = Omit<Project, "id" | "status" | "createdAt" | "updatedAt">;
 export type UpdateProjectInput = Partial<Omit<Project, "id" | "createdAt" | "ownerId">>;
 export type WatchProjectsFn = (

@@ -5,9 +5,20 @@ const {
   sendPortalInvite,
   getPortalCustomToken,
   activatePortal,
+  disablePortal,
+  enablePortal,
+  deletePortal,
 } = require("./portal");
 
 admin.initializeApp();
 setGlobalOptions({ maxInstances: 10 });
 
-module.exports = { generatePortalToken, sendPortalInvite, getPortalCustomToken, activatePortal };
+module.exports = {
+  generatePortalToken,
+  sendPortalInvite,
+  getPortalCustomToken,
+  activatePortal,
+  disablePortal,
+  enablePortal,
+  deletePortal,
+};

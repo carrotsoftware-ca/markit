@@ -1,5 +1,5 @@
 import { getFirestore, getStorage } from "@/src/services/firebase";
-import { MarkitEvent, Project, ProjectFile } from "@/src/types";
+import { MarkitEvent, PortalSession, Project, ProjectFile } from "@/src/types";
 import { Platform } from "react-native";
 
 /**
@@ -110,4 +110,24 @@ export async function uploadPortalFile(
   const url = await storageRef.getDownloadURL();
   await fileRef.update({ status: "done", url });
   return { fileId, url };
+}
+
+/**
+ * Subscribes to the portalSessions subcollection for a project in real time.
+ * Only the project owner can read this (enforced by Firestore rules).
+ * Returns an unsubscribe function.
+ */
+export function watchPortalSessions(
+  projectId: string,
+  onSessions: (sessions: PortalSession[]) => void,
+): () => void {
+  const db = getFirestore();
+  return db
+    .collection("projects")
+    .doc(projectId)
+    .collection("portalSessions")
+    .onSnapshot(
+      (snap) => onSessions(snap.docs.map((doc) => doc.data() as PortalSession)),
+      () => onSessions([]),
+    );
 }
