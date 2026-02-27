@@ -22,7 +22,10 @@ export default function ProjectDetailsScreen() {
 
   const handleInviteClient = async () => {
     if (!project?.client_email) {
-      Alert.alert("No client email", "Add a client email address to this project before sending an invite.");
+      Alert.alert(
+        "No client email",
+        "Add a client email address to this project before sending an invite.",
+      );
       return;
     }
     setInviting(true);

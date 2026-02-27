@@ -1,6 +1,6 @@
 import * as admin from "firebase-admin";
 import { defineSecret } from "firebase-functions/params";
-import { onCall, HttpsError } from "firebase-functions/v2/https";
+import { HttpsError, onCall } from "firebase-functions/v2/https";
 import { v4 as uuidv4 } from "uuid";
 
 const sendgridApiKey = defineSecret("SENDGRID_API_KEY");
@@ -51,63 +51,57 @@ export const generatePortalToken = onCall(async (request) => {
 // sendPortalInvite
 // Generates a token (if needed) then emails the client via SendGrid.
 // ---------------------------------------------------------------------------
-export const sendPortalInvite = onCall(
-  { secrets: [sendgridApiKey] },
-  async (request) => {
-    if (!request.auth) {
-      throw new HttpsError("unauthenticated", "Must be signed in.");
-    }
+export const sendPortalInvite = onCall({ secrets: [sendgridApiKey] }, async (request) => {
+  if (!request.auth) {
+    throw new HttpsError("unauthenticated", "Must be signed in.");
+  }
 
-    const { projectId } = request.data as { projectId: string };
-    if (!projectId) {
-      throw new HttpsError("invalid-argument", "projectId is required.");
-    }
+  const { projectId } = request.data as { projectId: string };
+  if (!projectId) {
+    throw new HttpsError("invalid-argument", "projectId is required.");
+  }
 
-    const db = admin.firestore();
-    const projectRef = db.collection("projects").doc(projectId);
-    const projectSnap = await projectRef.get();
+  const db = admin.firestore();
+  const projectRef = db.collection("projects").doc(projectId);
+  const projectSnap = await projectRef.get();
 
-    if (!projectSnap.exists) {
-      throw new HttpsError("not-found", "Project not found.");
-    }
+  if (!projectSnap.exists) {
+    throw new HttpsError("not-found", "Project not found.");
+  }
 
-    const project = projectSnap.data()!;
+  const project = projectSnap.data()!;
 
-    if (project.ownerId !== request.auth.uid) {
-      throw new HttpsError("permission-denied", "Not your project.");
-    }
+  if (project.ownerId !== request.auth.uid) {
+    throw new HttpsError("permission-denied", "Not your project.");
+  }
 
-    if (!project.client_email) {
-      throw new HttpsError(
-        "failed-precondition",
-        "Project has no client email address.",
-      );
-    }
+  if (!project.client_email) {
+    throw new HttpsError("failed-precondition", "Project has no client email address.");
+  }
 
-    // Ensure token exists
-    const token: string = project.portalToken ?? uuidv4();
-    if (!project.portalToken) {
-      await projectRef.update({ portalToken: token, portalActive: true });
-    }
+  // Ensure token exists
+  const token: string = project.portalToken ?? uuidv4();
+  if (!project.portalToken) {
+    await projectRef.update({ portalToken: token, portalActive: true });
+  }
 
-    const portalUrl = `https://markit.app/portal/${token}`;
-    const contractorName =
-      (await admin.auth().getUser(request.auth.uid)).displayName ??
-      "Your contractor";
+  const portalUrl = `https://markit.app/portal/${token}`;
+  const contractorName =
+    (await admin.auth().getUser(request.auth.uid)).displayName ?? "Your contractor";
 
-    // Send email via SendGrid
-    // eslint-disable-next-line @typescript-eslint/no-require-imports
-    const sgMail = require("@sendgrid/mail");
-    sgMail.setApiKey(sendgridApiKey.value());
+  // Send email via SendGrid
+  // eslint-disable-next-line @typescript-eslint/no-require-imports
+  const sgMail = require("@sendgrid/mail");
+  sgMail.setApiKey(sendgridApiKey.value());
 
-    await sgMail.send({
-      to: project.client_email,
-      from: {
-        email: "noreply@markit.app",
-        name: "markit!",
-      },
-      subject: `${contractorName} shared a project with you — ${project.name}`,
-      html: `
+  await sgMail.send({
+    to: project.client_email,
+    from: {
+      email: "noreply@markit.app",
+      name: "markit!",
+    },
+    subject: `${contractorName} shared a project with you — ${project.name}`,
+    html: `
         <div style="font-family: sans-serif; max-width: 520px; margin: 0 auto; padding: 32px;">
           <h1 style="font-size: 28px; margin-bottom: 4px;">markit<span style="color:#FF6B00;">!</span></h1>
           <p style="color: #888; margin-top: 0;">Project Portal</p>
@@ -135,8 +129,7 @@ export const sendPortalInvite = onCall(
           </p>
         </div>
       `,
-    });
+  });
 
-    return { success: true, portalUrl };
-  },
-);
+  return { success: true, portalUrl };
+});

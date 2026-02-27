@@ -6,8 +6,7 @@ import { getFunctions } from "@/src/services/firebase";
  * Returns the portal URL on success.
  */
 export async function sendPortalInvite(projectId: string): Promise<string> {
-  const result = await getFunctions()
-    .httpsCallable("sendPortalInvite")({ projectId });
+  const result = await getFunctions().httpsCallable("sendPortalInvite")({ projectId });
   return (result.data as { portalUrl: string }).portalUrl;
 }
 
@@ -16,7 +15,6 @@ export async function sendPortalInvite(projectId: string): Promise<string> {
  * Returns the portal URL without sending an email — useful for the kill switch toggle.
  */
 export async function generatePortalToken(projectId: string): Promise<string> {
-  const result = await getFunctions()
-    .httpsCallable("generatePortalToken")({ projectId });
+  const result = await getFunctions().httpsCallable("generatePortalToken")({ projectId });
   return (result.data as { portalUrl: string }).portalUrl;
 }

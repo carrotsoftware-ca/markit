@@ -1,4 +1,8 @@
-import { getPortalEvents, getPortalFiles, getProjectByToken } from "@/src/services/projects/getPortalProject";
+import {
+    getPortalEvents,
+    getPortalFiles,
+    getProjectByToken,
+} from "@/src/services/projects/getPortalProject";
 import { MarkitEvent, MeasurementEvent, NormalizedPoint, Project, ProjectFile } from "@/src/types";
 import { useLocalSearchParams } from "expo-router";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
@@ -10,9 +14,7 @@ import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "re
 
 function getActiveEvents(events: MarkitEvent[]): MarkitEvent[] {
   const deleted = new Set(
-    events
-      .filter((e) => e.type === "delete")
-      .map((e) => (e as any).targetEventId as string),
+    events.filter((e) => e.type === "delete").map((e) => (e as any).targetEventId as string),
   );
   return events.filter((e) => e.type !== "delete" && !deleted.has(e.id));
 }
@@ -59,9 +61,7 @@ function MeasurementOverlay({ events, imageWidth, imageHeight }: OverlayProps) {
 
   const active = getActiveEvents(events);
   const calibration = getLatestCalibration(active);
-  const measurements = active.filter(
-    (e) => e.type === "measurement",
-  ) as MeasurementEvent[];
+  const measurements = active.filter((e) => e.type === "measurement") as MeasurementEvent[];
 
   return (
     // @ts-ignore — svg is valid HTML on web
@@ -95,7 +95,10 @@ function MeasurementOverlay({ events, imageWidth, imageHeight }: OverlayProps) {
             {/* Line */}
             {/* @ts-ignore */}
             <line
-              x1={x1} y1={y1} x2={x2} y2={y2}
+              x1={x1}
+              y1={y1}
+              x2={x2}
+              y2={y2}
               stroke="#FF6B00"
               strokeWidth={2}
               strokeLinecap="round"
@@ -108,15 +111,19 @@ function MeasurementOverlay({ events, imageWidth, imageHeight }: OverlayProps) {
             {/* Label background */}
             {/* @ts-ignore */}
             <rect
-              x={mx - 28} y={my - 11}
-              width={56} height={18}
-              rx={4} ry={4}
+              x={mx - 28}
+              y={my - 11}
+              width={56}
+              height={18}
+              rx={4}
+              ry={4}
               fill="rgba(0,0,0,0.65)"
             />
             {/* Label text */}
             {/* @ts-ignore */}
             <text
-              x={mx} y={my + 4}
+              x={mx}
+              y={my + 4}
               textAnchor="middle"
               fill="white"
               fontSize={11}
@@ -147,9 +154,7 @@ function FileCard({ file, events }: FileCardProps) {
 
   if (!file.url) return null;
 
-  const hasMeasurements = getActiveEvents(events).some(
-    (e) => e.type === "measurement",
-  );
+  const hasMeasurements = getActiveEvents(events).some((e) => e.type === "measurement");
 
   return (
     <View style={styles.fileCard}>
@@ -185,9 +190,7 @@ function FileCard({ file, events }: FileCardProps) {
           </>
         )}
       </View>
-      {file.notes ? (
-        <Text style={styles.fileNotes}>{file.notes}</Text>
-      ) : null}
+      {file.notes ? <Text style={styles.fileNotes}>{file.notes}</Text> : null}
     </View>
   );
 }
@@ -276,9 +279,7 @@ export default function PortalPage() {
       {/* Project info */}
       <View style={styles.projectMeta}>
         <Text style={styles.projectName}>{project.name}</Text>
-        {project.description ? (
-          <Text style={styles.projectDesc}>{project.description}</Text>
-        ) : null}
+        {project.description ? <Text style={styles.projectDesc}>{project.description}</Text> : null}
         <View style={[styles.statusBadge, styles[`status_${project.status ?? "draft"}`]]}>
           <Text style={styles.statusText}>{project.status ?? "draft"}</Text>
         </View>
@@ -290,9 +291,7 @@ export default function PortalPage() {
       {items.length === 0 ? (
         <Text style={styles.emptyText}>No files have been added to this project yet.</Text>
       ) : (
-        items.map(({ file, events }) => (
-          <FileCard key={file.id} file={file} events={events} />
-        ))
+        items.map(({ file, events }) => <FileCard key={file.id} file={file} events={events} />)
       )}
 
       <Text style={styles.footer}>Powered by markit!</Text>
@@ -314,7 +313,13 @@ const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: BG },
   pageContent: { maxWidth: 680, alignSelf: "center", width: "100%" as any, paddingBottom: 64 },
 
-  centred: { flex: 1, backgroundColor: BG, alignItems: "center", justifyContent: "center", padding: 32 },
+  centred: {
+    flex: 1,
+    backgroundColor: BG,
+    alignItems: "center",
+    justifyContent: "center",
+    padding: 32,
+  },
 
   header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16 },
   logo: { fontSize: 28, fontWeight: "900", color: TEXT, letterSpacing: -1 },

@@ -8,9 +8,7 @@ import { MarkitEvent, Project, ProjectFile } from "@/src/types";
  *
  * Returns null if the token is invalid or the portal has been revoked.
  */
-export async function getProjectByToken(
-  token: string,
-): Promise<Project | null> {
+export async function getProjectByToken(token: string): Promise<Project | null> {
   const db = getFirestore();
   const snap = await db
     .collection("projects")
@@ -29,11 +27,7 @@ export async function getProjectByToken(
  */
 export async function getPortalFiles(projectId: string): Promise<ProjectFile[]> {
   const db = getFirestore();
-  const snap = await db
-    .collection("projects")
-    .doc(projectId)
-    .collection("files")
-    .get();
+  const snap = await db.collection("projects").doc(projectId).collection("files").get();
 
   return snap.docs.map((doc) => ({
     id: doc.id,
@@ -44,10 +38,7 @@ export async function getPortalFiles(projectId: string): Promise<ProjectFile[]> 
 /**
  * Fetches all MarkIt events for a specific file (portal — no auth required).
  */
-export async function getPortalEvents(
-  projectId: string,
-  fileId: string,
-): Promise<MarkitEvent[]> {
+export async function getPortalEvents(projectId: string, fileId: string): Promise<MarkitEvent[]> {
   const db = getFirestore();
   const snap = await db
     .collection("projects")
