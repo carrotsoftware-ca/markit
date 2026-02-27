@@ -20,6 +20,18 @@ export async function generatePortalToken(projectId: string): Promise<string> {
 }
 
 /**
+ * Calls the getPortalCustomToken Cloud Function.
+ * Validates the portal token and returns a Firebase custom token that signs
+ * the client in with a stable UID derived from their email address. The same
+ * UID is produced on every device, so the session is automatically restored
+ * when the client reopens the link on a different device.
+ */
+export async function getPortalCustomToken(token: string): Promise<string> {
+  const result = await getFunctions().httpsCallable("getPortalCustomToken")({ token });
+  return (result.data as { customToken: string }).customToken;
+}
+
+/**
  * Calls the activatePortal Cloud Function.
  * Transitions the project status from "draft" → "active" when the client
  * first opens their portal link. Also records a portalSession for this device.

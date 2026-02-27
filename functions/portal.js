@@ -1,3 +1,5 @@
+const crypto = require("crypto");
+
 const admin = require("firebase-admin");
 const { FieldValue } = require("firebase-admin/firestore");
 const { defineSecret } = require("firebase-functions/params");
@@ -127,11 +129,52 @@ const sendPortalInvite = onCall({ secrets: [sendgridApiKey] }, async (request) =
 });
 
 // ---------------------------------------------------------------------------
+// getPortalCustomToken
+// Called by the portal page before any Firestore reads. Validates the token,
+// then returns a Firebase custom token that signs the client in with a stable
+// UID derived from their email address. The same UID is produced every time
+// for the same email, so the client is automatically re-authenticated on any
+// device without any extra sign-in step.
+// ---------------------------------------------------------------------------
+const getPortalCustomToken = onCall(async (request) => {
+  const { token } = request.data;
+  if (!token) {
+    throw new HttpsError("invalid-argument", "token is required.");
+  }
+
+  const db = admin.firestore();
+  const snap = await db
+    .collection("projects")
+    .where("portalToken", "==", token)
+    .where("portalActive", "==", true)
+    .limit(1)
+    .get();
+
+  if (snap.empty) {
+    throw new HttpsError("not-found", "Invalid or revoked portal token.");
+  }
+
+  const project = snap.docs[0].data();
+  const email = project.client_email ?? null;
+
+  // Derive a stable UID from the client email. If there's no email on the
+  // project (shouldn't happen in practice) fall back to a token-based UID.
+  const seed = email
+    ? `portal_email_${email.toLowerCase().trim()}`
+    : `portal_token_${token}`;
+  const uid = "portal_" + crypto.createHash("sha256").update(seed).digest("hex").slice(0, 28);
+
+  const customToken = await admin.auth().createCustomToken(uid, { portal: true, email });
+
+  return { customToken, uid };
+});
+
+// ---------------------------------------------------------------------------
 // activatePortal
 // Called by the portal web page when a client opens their link for the
 // first time. Transitions the project status from "draft" → "active".
-// Also writes a portalSession doc keyed by the caller's anon UID so we
-// can track which devices/clients have accessed the portal.
+// Also writes/updates a portalSession doc keyed by the client's stable UID
+// (one doc per email address, shared across all devices).
 // ---------------------------------------------------------------------------
 const activatePortal = onCall(async (request) => {
   const { token, platform = "web" } = request.data;
@@ -159,9 +202,9 @@ const activatePortal = onCall(async (request) => {
     await projectRef.update({ status: "active" });
   }
 
-  // Record the portal session for this device if the caller is authenticated
-  // (i.e. signed in anonymously). Unauthenticated calls still work but won't
-  // record a session — this is a graceful fallback only.
+  // Record/update the portal session. The UID is stable per email, so this
+  // doc is shared across all devices — we track all platforms seen as an
+  // array union so no visit data is lost.
   if (request.auth) {
     const uid = request.auth.uid;
     const sessionRef = projectRef.collection("portalSessions").doc(uid);
@@ -169,21 +212,22 @@ const activatePortal = onCall(async (request) => {
     const now = FieldValue.serverTimestamp();
 
     if (!sessionSnap.exists) {
-      // First visit on this device — create the session doc.
       await sessionRef.set({
         uid,
         email: project.client_email ?? null,
-        platform,
+        platforms: [platform],
         firstSeenAt: now,
         lastSeenAt: now,
       });
     } else {
-      // Returning visit — just update the last seen timestamp.
-      await sessionRef.update({ lastSeenAt: now });
+      await sessionRef.update({
+        lastSeenAt: now,
+        platforms: FieldValue.arrayUnion(platform),
+      });
     }
   }
 
   return { success: true };
 });
 
-module.exports = { generatePortalToken, sendPortalInvite, activatePortal };
+module.exports = { generatePortalToken, sendPortalInvite, getPortalCustomToken, activatePortal };

@@ -5,7 +5,7 @@ import {
   getProjectByToken,
   uploadPortalFile,
 } from "@/src/services/projects/getPortalProject";
-import { activatePortal } from "@/src/services/projects/sendPortalInvite";
+import { activatePortal, getPortalCustomToken } from "@/src/services/projects/sendPortalInvite";
 import { MarkitEvent, Project, ProjectFile } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -110,10 +110,12 @@ export default function PortalPage() {
     (async () => {
       setLoading(true);
       try {
-        // Sign in anonymously so we have a Firebase UID for this device.
-        // signInAnonymously() is idempotent — if already signed in it returns
-        // the existing anon credential, preserving the session across visits.
-        await getAuth().signInAnonymously();
+        // Exchange the portal token for a Firebase custom token and sign in.
+        // The backend derives a stable UID from the client's email address, so
+        // the same Firebase account is restored on every device — no separate
+        // sign-in step needed. The portal link itself IS the credential.
+        const customToken = await getPortalCustomToken(token);
+        await getAuth().signInWithCustomToken(customToken);
 
         const proj = await getProjectByToken(token);
         if (!proj) {
