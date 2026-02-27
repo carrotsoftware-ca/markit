@@ -18,3 +18,13 @@ export async function generatePortalToken(projectId: string): Promise<string> {
   const result = await getFunctions().httpsCallable("generatePortalToken")({ projectId });
   return (result.data as { portalUrl: string }).portalUrl;
 }
+
+/**
+ * Calls the activatePortal Cloud Function.
+ * Transitions the project status from "draft" → "active" when the client
+ * first opens their portal link. Safe to call multiple times — only acts
+ * when the project is still in draft.
+ */
+export async function activatePortal(token: string): Promise<void> {
+  await getFunctions().httpsCallable("activatePortal")({ token });
+}

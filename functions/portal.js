@@ -132,4 +132,37 @@ const sendPortalInvite = onCall({ secrets: [sendgridApiKey] }, async (request) =
   return { success: true, portalUrl };
 });
 
-module.exports = { generatePortalToken, sendPortalInvite };
+// ---------------------------------------------------------------------------
+// activatePortal
+// Called by the portal web page when a client opens their link for the
+// first time. Transitions the project status from "draft" → "active".
+// No authentication required — the token is the proof of access.
+// ---------------------------------------------------------------------------
+const activatePortal = onCall(async (request) => {
+  const { token } = request.data;
+  if (!token) {
+    throw new HttpsError("invalid-argument", "token is required.");
+  }
+
+  const db = admin.firestore();
+  const snap = await db
+    .collection("projects")
+    .where("portalToken", "==", token)
+    .where("portalActive", "==", true)
+    .limit(1)
+    .get();
+
+  if (snap.empty) {
+    throw new HttpsError("not-found", "Invalid or revoked portal token.");
+  }
+
+  const projectRef = snap.docs[0].ref;
+  const project = snap.docs[0].data();
+
+  // Only transition draft → active; don't touch completed projects.
+  if (project.status === "draft") {
+    await projectRef.update({ status: "active" });
+  }
+
+  return { success: true };
+});

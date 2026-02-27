@@ -3,6 +3,7 @@ import {
   getPortalFiles,
   getProjectByToken,
 } from "@/src/services/projects/getPortalProject";
+import { activatePortal } from "@/src/services/projects/sendPortalInvite";
 import { MarkitEvent, Project, ProjectFile } from "@/src/types";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useLayoutEffect, useState } from "react";
@@ -107,6 +108,10 @@ export default function PortalPage() {
           return;
         }
         setProject(proj);
+
+        // Transition draft → active when the client opens the portal.
+        // Fire-and-forget: don't block the rest of the load if this fails.
+        activatePortal(token).catch(() => {});
 
         const files = await getPortalFiles(proj.id);
         const doneFiles = files.filter((f) => f.status === "done");
