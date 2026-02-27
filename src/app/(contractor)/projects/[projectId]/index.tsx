@@ -6,11 +6,11 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { takePhoto } from "@/src/hooks/useCamera";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
 import { pickMedia } from "@/src/hooks/useMediaPicker";
-import { deleteProjectFile, uploadProjectFile } from "@/src/services/projects";
+import { deleteProjectFile, sendPortalInvite, uploadProjectFile } from "@/src/services/projects";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
-import React, { useCallback } from "react";
-import { Pressable, ScrollView } from "react-native";
+import React, { useCallback, useState } from "react";
+import { Alert, Pressable, ScrollView } from "react-native";
 
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
@@ -18,6 +18,26 @@ export default function ProjectDetailsScreen() {
   const { theme } = useTheme();
   const router = useRouter();
   const dialog = useConfirmDialog();
+  const [inviting, setInviting] = useState(false);
+
+  const handleInviteClient = async () => {
+    if (!project?.client_email) {
+      Alert.alert(
+        "No client email",
+        "Add a client email address to this project before sending an invite.",
+      );
+      return;
+    }
+    setInviting(true);
+    try {
+      await sendPortalInvite(projectId as string);
+      Alert.alert("Invite sent!", `Portal link sent to ${project.client_email}.`);
+    } catch (e: any) {
+      Alert.alert("Failed to send invite", e?.message ?? "Please try again.");
+    } finally {
+      setInviting(false);
+    }
+  };
 
   useFocusEffect(
     useCallback(() => {
@@ -85,6 +105,13 @@ export default function ProjectDetailsScreen() {
         <DetailsWrapper.Title>{name}</DetailsWrapper.Title>
         <DetailsWrapper.Subtitle>{status}</DetailsWrapper.Subtitle>
         <DetailsWrapper.HeaderAction>
+          <Pressable onPress={handleInviteClient} disabled={inviting} style={{ marginRight: 16 }}>
+            <MaterialCommunityIcons
+              name="email-arrow-right-outline"
+              size={24}
+              color={inviting ? theme.colors.text.secondary : theme.colors.safetyOrange}
+            />
+          </Pressable>
           <Pressable
             onPress={() =>
               dialog.show({

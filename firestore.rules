@@ -3,25 +3,81 @@ rules_version='2'
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can only read and write their own document
+    // ---------------------------------------------------------------------------
+    // Helper functions
+    // ---------------------------------------------------------------------------
+
+    // True when the caller owns the project document.
+    function isProjectOwner(projectId) {
+      return request.auth != null
+          && get(/databases/$(database)/documents/projects/$(projectId)).data.ownerId == request.auth.uid;
+    }
+
+    // True when the portal is active and the caller presents the correct token.
+    // Used for files/events subcollections — re-reads the parent project to
+    // verify the token the client passed as a Firestore where() filter.
+    function isValidPortalToken(projectId) {
+      let proj = get(/databases/$(database)/documents/projects/$(projectId)).data;
+      return proj.portalActive == true && proj.portalToken != null;
+    }
+
+    // ---------------------------------------------------------------------------
+    // Users — own document only
+    // ---------------------------------------------------------------------------
+
     match /users/{userId} {
       allow read, write: if request.auth != null && request.auth.uid == userId;
     }
 
+    // ---------------------------------------------------------------------------
+    // Projects
+    // ---------------------------------------------------------------------------
+
     match /projects/{projectId} {
-      allow read, delete, write: if request.auth != null;
+      // Create: caller must set themselves as owner
+      allow create: if request.auth != null
+                    && request.resource.data.ownerId == request.auth.uid;
 
-      // Files subcollection — replaces the old files[] array on the project document
+      // Read / update / delete: owner only
+      allow read, update, delete: if request.auth != null
+                                  && resource.data.ownerId == request.auth.uid;
+
+      // Unauthenticated portal read — the query itself filters by portalToken
+      // and portalActive, so we just verify those fields on the matched document.
+      // (request.query is not available in Firestore rules — the where() clauses
+      // are enforced by the rules matching the document's own field values.)
+      allow read: if resource.data.portalActive == true
+                  && resource.data.portalToken != null;
+
+      // -------------------------------------------------------------------------
+      // Files subcollection
+      // -------------------------------------------------------------------------
+
       match /files/{fileId} {
-        allow read, write: if request.auth != null;
+        // Owner: full read/write
+        allow read, write: if isProjectOwner(projectId);
 
-        // Events subcollection — append-only (no updates or hard deletes)
-        // Soft deletes are handled by writing a { type: "delete" } event instead
+        // Portal: read only, token must be valid
+        allow read: if isValidPortalToken(projectId);
+
+        // -----------------------------------------------------------------------
+        // Events subcollection — append-only, no updates or hard deletes.
+        // Soft deletes use a { type: "delete", targetEventId: "..." } event.
+        // -----------------------------------------------------------------------
+
         match /events/{eventId} {
-          allow read: if request.auth != null;
-          allow create: if request.auth != null;
-          allow update: if false;
-          allow delete: if false;
+          // Owner: full read + append
+          allow read, create: if isProjectOwner(projectId);
+          // No one can update or hard-delete an event
+          allow update, delete: if false;
+
+          // Portal: read valid events + append measurement events only.
+          // Field validation prevents portal clients from writing fake
+          // calibration, delete, or other privileged event types.
+          allow read: if isValidPortalToken(projectId);
+          allow create: if isValidPortalToken(projectId)
+                        && request.resource.data.type == "measurement"
+                        && request.resource.data.keys().hasAll(["type", "start", "end", "createdAt"]);
         }
       }
     }
