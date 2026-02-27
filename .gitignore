@@ -50,3 +50,4 @@ app-example
 # src/services/firebase/google-services.json
 
 *.ipa
+*.aab
