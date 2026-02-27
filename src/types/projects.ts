@@ -11,6 +11,9 @@ export interface ProjectFile {
   // markit-specific fields — null means the file hasn't been opened in MarkIt yet
   markitStatus?: "active" | "exported";
   exportedUrl?: string;
+  // user-editable metadata
+  name?: string; // friendly display name — distinct from filename
+  notes?: string;
 }
 
 export interface Project {
@@ -28,13 +31,8 @@ export interface Project {
   // they are NOT stored on this document anymore
 }
 
-export type CreateProjectInput = Omit<
-  Project,
-  "id" | "status" | "createdAt" | "updatedAt"
->;
-export type UpdateProjectInput = Partial<
-  Omit<Project, "id" | "createdAt" | "ownerId">
->;
+export type CreateProjectInput = Omit<Project, "id" | "status" | "createdAt" | "updatedAt">;
+export type UpdateProjectInput = Partial<Omit<Project, "id" | "createdAt" | "ownerId">>;
 export type WatchProjectsFn = (
   setProjects: (projects: Project[]) => void,
   ownerId: string,

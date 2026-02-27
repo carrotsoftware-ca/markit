@@ -6,7 +6,7 @@ import { FileRow } from "./FileRow";
 interface UploadedFile {
   id: string;
   filename: string;
-  size: string;
+  name?: string;
   date: string;
   url?: string;
   status?: "uploading" | "done" | "error";
@@ -18,17 +18,7 @@ interface UploadedFilesProps {
   onFilePress?: (fileId: string) => void;
 }
 
-const IMAGE_EXTENSIONS = ["png", "jpg", "jpeg", "gif", "webp", "svg"];
-function isImageFile(filename: string) {
-  const ext = filename.split(".").pop()?.toLowerCase() ?? "";
-  return IMAGE_EXTENSIONS.includes(ext);
-}
-
-export default function UploadedFiles({
-  files,
-  onFileMenu,
-  onFilePress,
-}: UploadedFilesProps) {
+export default function UploadedFiles({ files, onFileMenu, onFilePress }: UploadedFilesProps) {
   const { theme } = useTheme();
 
   return (
@@ -62,11 +52,10 @@ export default function UploadedFiles({
         files.map((file) => (
           <FileRow
             key={file.id}
-            filename={file.filename}
-            size={file.size}
+            filename={file.name || file.filename}
             date={file.date}
             status={file.status}
-            onPress={isImageFile(file.filename) && file.status === "done" ? () => onFilePress?.(file.id) : undefined}
+            onPress={file.status === "done" ? () => onFilePress?.(file.id) : undefined}
             onMenu={() => onFileMenu?.(file.id)}
           />
         ))

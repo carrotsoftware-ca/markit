@@ -1,10 +1,6 @@
 import ConfirmDialog from "@/src/components/ui/ConfirmDialog";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
-import {
-  ProjectAssets,
-  ProjectDescription,
-  UploadedFiles,
-} from "@/src/components/ui/projects";
+import { ProjectAssets, ProjectDescription, UploadedFiles } from "@/src/components/ui/projects";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { takePhoto } from "@/src/hooks/useCamera";
@@ -18,8 +14,7 @@ import { Pressable, ScrollView } from "react-native";
 
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
-  const { deleteProject, watchProject, watchProjectFiles, project, files } =
-    useProjects();
+  const { deleteProject, watchProject, watchProjectFiles, project, files } = useProjects();
   const { theme } = useTheme();
   const router = useRouter();
   const dialog = useConfirmDialog();
@@ -40,42 +35,31 @@ export default function ProjectDetailsScreen() {
   const handleUpload = async () => {
     const media = await pickMedia();
     if (!media) return;
-    const { fileId, url } = await uploadProjectFile(
+    await uploadProjectFile(
       projectId as string,
       media.uri,
       media.filename,
       media.mimeType,
       media.fileSize,
     );
-    router.push({
-      pathname: "/(contractor)/projects/measure",
-      params: { fileUrl: url, projectId: projectId as string, fileId },
-    });
   };
 
   const handleCamera = async () => {
     const photo = await takePhoto();
     if (!photo) return;
-    const { fileId, url } = await uploadProjectFile(
+    await uploadProjectFile(
       projectId as string,
       photo.uri,
       photo.filename,
       photo.mimeType,
       photo.fileSize,
     );
-    router.push({
-      pathname: "/(contractor)/projects/measure",
-      params: { fileUrl: url, projectId: projectId as string, fileId },
-    });
   };
 
   const handleFilePress = (fileId: string) => {
-    const file = files.find((f) => f.id === fileId);
-    if (!file?.url) return;
     router.push({
-      pathname: "/(contractor)/projects/measure",
-      // Pass projectId + fileId so the measure screen can connect to the event log
-      params: { fileUrl: file.url, projectId: projectId as string, fileId },
+      pathname: "/(contractor)/projects/[projectId]/[fileId]",
+      params: { projectId: projectId as string, fileId },
     });
   };
 
@@ -95,11 +79,7 @@ export default function ProjectDetailsScreen() {
       <DetailsWrapper>
         <DetailsWrapper.NavAction>
           <Pressable onPress={() => router.back()}>
-            <MaterialCommunityIcons
-              name="arrow-left"
-              size={24}
-              color={theme.colors.text.primary}
-            />
+            <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text.primary} />
           </Pressable>
         </DetailsWrapper.NavAction>
         <DetailsWrapper.Title>{name}</DetailsWrapper.Title>
@@ -118,11 +98,7 @@ export default function ProjectDetailsScreen() {
               })
             }
           >
-            <MaterialCommunityIcons
-              name="trash-can-outline"
-              size={24}
-              color="red"
-            />
+            <MaterialCommunityIcons name="trash-can-outline" size={24} color="red" />
           </Pressable>
         </DetailsWrapper.HeaderAction>
         <DetailsWrapper.Content>

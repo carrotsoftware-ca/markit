@@ -19,10 +19,13 @@ export function watchProjectFiles(
     .collection("files")
     .onSnapshot((snapshot) => {
       if (!snapshot) return;
-      const files: ProjectFile[] = snapshot.docs.map((doc) => ({
-        ...(doc.data() as ProjectFile),
-        id: doc.id,
-      }));
+      const files: ProjectFile[] = snapshot.docs
+        .map((doc) => ({
+          ...(doc.data() as ProjectFile),
+          id: doc.id,
+        }))
+        // Newest first — fileId starts with Date.now() so lexicographic desc == time desc
+        .sort((a, b) => b.id.localeCompare(a.id));
       setFiles(files);
     });
 
