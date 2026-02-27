@@ -49,9 +49,7 @@ export function useDashboard(): DashboardData {
   const recentProjects = useMemo(
     () =>
       [...projects]
-        .sort((a, b) =>
-          toUnixMs(b.updatedAt ?? b.createdAt) - toUnixMs(a.updatedAt ?? a.createdAt),
-        )
+        .sort((a, b) => toUnixMs(b.updatedAt ?? b.createdAt) - toUnixMs(a.updatedAt ?? a.createdAt))
         .slice(0, 3),
     [projects],
   );

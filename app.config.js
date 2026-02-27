@@ -137,7 +137,7 @@ export default ({ config }) => ({
     ],
     experiments: {
       typedRoutes: true,
-      reactCompiler: true,
+      reactCompiler: false,
     },
     extra: {
       router: {},
