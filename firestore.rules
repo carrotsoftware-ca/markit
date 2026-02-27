@@ -18,7 +18,9 @@ service cloud.firestore {
     // verify the token the client passed as a Firestore where() filter.
     function isValidPortalToken(projectId) {
       let proj = get(/databases/$(database)/documents/projects/$(projectId)).data;
-      return proj.portalActive == true && proj.portalToken != null;
+      return request.auth != null
+          && proj.portalActive == true
+          && proj.portalToken != null;
     }
 
     // ---------------------------------------------------------------------------
@@ -44,10 +46,18 @@ service cloud.firestore {
 
       // Unauthenticated portal read — the query itself filters by portalToken
       // and portalActive, so we just verify those fields on the matched document.
-      // (request.query is not available in Firestore rules — the where() clauses
-      // are enforced by the rules matching the document's own field values.)
+      // Anon-auth users are also permitted (request.auth may be set or null).
       allow read: if resource.data.portalActive == true
                   && resource.data.portalToken != null;
+
+      // -------------------------------------------------------------------------
+      // Portal sessions — written by the Cloud Function (admin SDK bypasses rules)
+      // but readable by the project owner to show who has viewed the portal.
+      // -------------------------------------------------------------------------
+      match /portalSessions/{sessionId} {
+        allow read: if isProjectOwner(projectId);
+        allow write: if false; // Cloud Function only (admin SDK)
+      }
 
       // -------------------------------------------------------------------------
       // Files subcollection

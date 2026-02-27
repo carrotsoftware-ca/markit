@@ -75,15 +75,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   useEffect(() => {
     // In development, the emulator is wiped on each restart but Firebase Auth
     // caches the session in AsyncStorage. Sign out immediately so a stale
-    // cached user never sneaks past the auth gate against a fresh emulator.
+    // cached contractor session never sneaks past the auth gate against a
+    // fresh emulator. We skip this for anonymous users — those are portal
+    // clients whose session should persist.
     if (__DEV__) {
-      getAuth()
-        .signOut()
-        .catch(() => {});
+      const currentUser = getAuth().currentUser;
+      if (currentUser && !currentUser.isAnonymous) {
+        getAuth()
+          .signOut()
+          .catch(() => {});
+      }
     }
 
     const unsubscribe = getAuth().onAuthStateChanged((user) => {
-      if (user) {
+      // Anonymous users are portal clients — they should not be treated as
+      // logged-in contractors. Only real (non-anonymous) accounts get access
+      // to the contractor app.
+      if (user && !user.isAnonymous) {
         setIsLoggedIn(true);
         setUser({
           id: user.uid,
