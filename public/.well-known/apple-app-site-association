@@ -1,0 +1,15 @@
+{
+  "applinks": {
+    "apps": [],
+    "details": [
+      {
+        "appID": "9CTMYS84XH.com.carrotsoftware.markit",
+        "paths": [
+          "/portal/*",
+          "/validate/password",
+          "/reset/password"
+        ]
+      }
+    ]
+  }
+}
