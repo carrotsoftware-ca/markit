@@ -5,6 +5,7 @@ import {
   uploadPortalFile,
 } from "@/src/services/projects/getPortalProject";
 import { activatePortal } from "@/src/services/projects/sendPortalInvite";
+import { getAuth } from "@/src/services/firebase";
 import { MarkitEvent, Project, ProjectFile } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -13,6 +14,7 @@ import {
   ActivityIndicator,
   Alert,
   Image,
+  Platform,
   Pressable,
   ScrollView,
   StyleSheet,
@@ -108,6 +110,11 @@ export default function PortalPage() {
     (async () => {
       setLoading(true);
       try {
+        // Sign in anonymously so we have a Firebase UID for this device.
+        // signInAnonymously() is idempotent — if already signed in it returns
+        // the existing anon credential, preserving the session across visits.
+        await getAuth().signInAnonymously();
+
         const proj = await getProjectByToken(token);
         if (!proj) {
           setRevoked(true);
@@ -115,9 +122,9 @@ export default function PortalPage() {
         }
         setProject(proj);
 
-        // Transition draft → active when the client opens the portal.
-        // Fire-and-forget: don't block the rest of the load if this fails.
-        activatePortal(token).catch(() => {});
+        // Record this session (uid + email + platform) and transition draft → active.
+        const platform = Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "web";
+        activatePortal(token, platform).catch(() => {});
 
         const files = await getPortalFiles(proj.id);
         const doneFiles = files.filter((f) => f.status === "done");

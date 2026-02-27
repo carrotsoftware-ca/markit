@@ -129,10 +129,11 @@ const sendPortalInvite = onCall({ secrets: [sendgridApiKey] }, async (request) =
 // activatePortal
 // Called by the portal web page when a client opens their link for the
 // first time. Transitions the project status from "draft" → "active".
-// No authentication required — the token is the proof of access.
+// Also writes a portalSession doc keyed by the caller's anon UID so we
+// can track which devices/clients have accessed the portal.
 // ---------------------------------------------------------------------------
 const activatePortal = onCall(async (request) => {
-  const { token } = request.data;
+  const { token, platform = "web" } = request.data;
   if (!token) {
     throw new HttpsError("invalid-argument", "token is required.");
   }
@@ -155,6 +156,30 @@ const activatePortal = onCall(async (request) => {
   // Only transition draft → active; don't touch completed projects.
   if (project.status === "draft") {
     await projectRef.update({ status: "active" });
+  }
+
+  // Record the portal session for this device if the caller is authenticated
+  // (i.e. signed in anonymously). Unauthenticated calls still work but won't
+  // record a session — this is a graceful fallback only.
+  if (request.auth) {
+    const uid = request.auth.uid;
+    const sessionRef = projectRef.collection("portalSessions").doc(uid);
+    const sessionSnap = await sessionRef.get();
+    const now = admin.firestore.FieldValue.serverTimestamp();
+
+    if (!sessionSnap.exists) {
+      // First visit on this device — create the session doc.
+      await sessionRef.set({
+        uid,
+        email: project.client_email ?? null,
+        platform,
+        firstSeenAt: now,
+        lastSeenAt: now,
+      });
+    } else {
+      // Returning visit — just update the last seen timestamp.
+      await sessionRef.update({ lastSeenAt: now });
+    }
   }
 
   return { success: true };
