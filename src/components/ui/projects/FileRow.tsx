@@ -3,11 +3,11 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect } from "react";
 import { Pressable, StyleSheet, Text, View } from "react-native";
 import Animated, {
-  useAnimatedStyle,
-  useSharedValue,
-  withRepeat,
-  withSequence,
-  withTiming,
+    useAnimatedStyle,
+    useSharedValue,
+    withRepeat,
+    withSequence,
+    withTiming,
 } from "react-native-reanimated";
 
 type FileType = "image" | "pdf" | "zip" | "other";
@@ -15,8 +15,7 @@ type FileType = "image" | "pdf" | "zip" | "other";
 function getFileType(filename: string | undefined): FileType {
   if (!filename) return "other";
   const ext = filename.split(".").pop()?.toLowerCase();
-  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext ?? ""))
-    return "image";
+  if (["png", "jpg", "jpeg", "gif", "webp", "svg"].includes(ext ?? "")) return "image";
   if (ext === "pdf") return "pdf";
   if (ext === "zip") return "zip";
   return "other";
@@ -37,14 +36,13 @@ function getFileIcon(type: FileType) {
 
 export interface FileRowProps {
   filename: string;
-  size: string;
   date: string;
   status?: "uploading" | "done" | "error";
   onPress?: () => void;
   onMenu?: () => void;
 }
 
-export function FileRow({ filename, size, date, status, onPress, onMenu }: FileRowProps) {
+export function FileRow({ filename, date, status, onPress, onMenu }: FileRowProps) {
   const { theme } = useTheme();
   const fileType = getFileType(filename);
   const icon = getFileIcon(fileType);
@@ -54,10 +52,7 @@ export function FileRow({ filename, size, date, status, onPress, onMenu }: FileR
   useEffect(() => {
     if (status === "uploading") {
       opacity.value = withRepeat(
-        withSequence(
-          withTiming(0.35, { duration: 600 }),
-          withTiming(1, { duration: 600 }),
-        ),
+        withSequence(withTiming(0.35, { duration: 600 }), withTiming(1, { duration: 600 })),
         -1,
         false,
       );
@@ -70,45 +65,37 @@ export function FileRow({ filename, size, date, status, onPress, onMenu }: FileR
 
   return (
     <Animated.View
-      style={[
-        styles.row,
-        { backgroundColor: theme.colors.surface ?? "#1e1e1e" },
-        animatedStyle,
-      ]}
+      style={[styles.row, { backgroundColor: theme.colors.surface ?? "#1e1e1e" }, animatedStyle]}
     >
       <Pressable style={styles.rowContent} onPress={onPress} disabled={!onPress}>
-      <View style={[styles.iconCircle, { backgroundColor: icon.color + "22" }]}>
-        <MaterialCommunityIcons
-          name={icon.name as any}
-          size={22}
-          color={icon.color}
-        />
-      </View>
-      <View style={styles.info}>
-        <Text
-          style={[
-            styles.filename,
-            {
-              color: theme.colors.text.primary,
-              fontFamily: theme.typography.fontFamily.bold,
-            },
-          ]}
-          numberOfLines={1}
-        >
-          {filename}
-        </Text>
-        <Text
-          style={[
-            styles.meta,
-            {
-              color: theme.colors.text.secondary,
-              fontFamily: theme.typography.fontFamily.regular,
-            },
-          ]}
-        >
-          {size} · {status === "uploading" ? "Uploading..." : date}
-        </Text>
-      </View>
+        <View style={[styles.iconCircle, { backgroundColor: icon.color + "22" }]}>
+          <MaterialCommunityIcons name={icon.name as any} size={22} color={icon.color} />
+        </View>
+        <View style={styles.info}>
+          <Text
+            style={[
+              styles.filename,
+              {
+                color: theme.colors.text.primary,
+                fontFamily: theme.typography.fontFamily.bold,
+              },
+            ]}
+            numberOfLines={1}
+          >
+            {filename}
+          </Text>
+          <Text
+            style={[
+              styles.meta,
+              {
+                color: theme.colors.text.secondary,
+                fontFamily: theme.typography.fontFamily.regular,
+              },
+            ]}
+          >
+            {status === "uploading" ? "Uploading..." : date}
+          </Text>
+        </View>
       </Pressable>
       <Pressable onPress={onMenu} style={styles.menu}>
         <MaterialCommunityIcons
