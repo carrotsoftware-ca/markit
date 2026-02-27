@@ -5,7 +5,6 @@ import { getAuth } from "@/src/services/firebase";
 import { AuthStateType, User } from "@types";
 import { useRouter } from "expo-router";
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
-import { unstable_batchedUpdates } from "react-native";
 
 import { getUser, insertUser, updateUser, upsertUser } from "@services/user";
 
@@ -99,42 +98,33 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         try {
           const idTokenResult = await firebaseUser.getIdTokenResult();
           if (idTokenResult.claims.portal) {
-            // Portal client — treat as logged-out contractor. All three state
-            // updates in one batch so no intermediate renders can sneak through.
-            unstable_batchedUpdates(() => {
-              setIsReady(true);
-              setIsLoggedIn(false);
-              setUser(null);
-            });
+            // Portal client — treat as logged-out contractor.
+            setIsReady(true);
+            setIsLoggedIn(false);
+            setUser(null);
             return;
           }
         } catch {
           // User signed out between the auth state event and the token fetch —
           // treat as logged-out and let the next onAuthStateChanged(null) fire.
-          unstable_batchedUpdates(() => {
-            setIsReady(true);
-            setIsLoggedIn(false);
-            setUser(null);
-          });
+          setIsReady(true);
+          setIsLoggedIn(false);
+          setUser(null);
           return;
         }
         // Set user first so ProjectsContext has a valid user.id before
         // isLoggedIn flips to true and the dashboard mounts.
-        unstable_batchedUpdates(() => {
-          setUser({
-            id: firebaseUser.uid,
-            displayName: firebaseUser.displayName,
-            email: firebaseUser.email,
-          });
-          setIsLoggedIn(true);
-          setIsReady(true);
+        setUser({
+          id: firebaseUser.uid,
+          displayName: firebaseUser.displayName,
+          email: firebaseUser.email,
         });
+        setIsLoggedIn(true);
+        setIsReady(true);
       } else {
-        unstable_batchedUpdates(() => {
-          setUser(null);
-          setIsLoggedIn(false);
-          setIsReady(true);
-        });
+        setUser(null);
+        setIsLoggedIn(false);
+        setIsReady(true);
       }
     });
     return unsubscribe;
