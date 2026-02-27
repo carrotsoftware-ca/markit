@@ -15,9 +15,13 @@
       }
     },
     "preview": {
-      "distribution": "store",
+      "distribution": "internal",
       "ios": {
         "credentialsSource": "local"
+      },
+      "android": {
+        "credentialsSource": "local",
+        "buildType": "apk"
       }
     },
     "production": {
