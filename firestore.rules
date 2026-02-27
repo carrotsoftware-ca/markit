@@ -57,8 +57,20 @@ service cloud.firestore {
         // Owner: full read/write
         allow read, write: if isProjectOwner(projectId);
 
-        // Portal: read only, token must be valid
+        // Portal: read existing files
         allow read: if isValidPortalToken(projectId);
+
+        // Portal: create new file documents (client uploads).
+        // Must have the required fields; status must start as "uploading".
+        // update/delete remain locked — only the owner can modify existing docs.
+        allow create: if isValidPortalToken(projectId)
+                      && request.resource.data.keys().hasAll(["filename", "status", "size", "date", "storagePath"])
+                      && request.resource.data.status == "uploading";
+
+        // Portal: update status + url only — finalize an upload in progress.
+        // Prevents clients from modifying filenames, storagePaths, etc.
+        allow update: if isValidPortalToken(projectId)
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "url", "progress"]);
 
         // -----------------------------------------------------------------------
         // Events subcollection — append-only, no updates or hard deletes.
