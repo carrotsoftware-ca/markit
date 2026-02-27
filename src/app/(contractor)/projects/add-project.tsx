@@ -5,7 +5,7 @@ import { useTheme } from "@/src/context/ThemeContext";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import React from "react";
-import { StyleSheet, View } from "react-native";
+import { Alert, StyleSheet, View } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 export default function AddProject() {
@@ -17,12 +17,11 @@ export default function AddProject() {
     try {
       const id = await createProject(data);
       if (id) {
-        router.dismissTo(
-          `/(contractor)/projects/${id}?name=${data.name}&status=${"draft"}`,
-        );
+        router.dismissTo(`/(contractor)/projects/${id}?name=${data.name}&status=${"draft"}`);
       }
-    } catch (error) {
-      console.log(error);
+    } catch (error: any) {
+      console.error("[AddProject]", error);
+      Alert.alert("Failed to create project", error?.message ?? String(error));
     }
   };
 

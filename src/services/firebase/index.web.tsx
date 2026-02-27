@@ -5,7 +5,7 @@ import "firebase/compat/firestore";
 import "firebase/compat/functions";
 import "firebase/compat/storage";
 
-const host = process.env.EXPO_PUBLIC_EMULATOR_HOST ?? "localhost";
+const host = process.env.EXPO_PUBLIC_EMULATOR_HOST;
 
 const firebaseConfig = {
   apiKey: process.env.EXPO_PUBLIC_FIREBASE_API_KEY,

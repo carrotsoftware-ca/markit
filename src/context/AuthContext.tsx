@@ -63,6 +63,13 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   };
 
   useEffect(() => {
+    // In development, the emulator is wiped on each restart but Firebase Auth
+    // caches the session in AsyncStorage. Sign out immediately so a stale
+    // cached user never sneaks past the auth gate against a fresh emulator.
+    if (__DEV__) {
+      getAuth().signOut().catch(() => {});
+    }
+
     const unsubscribe = getAuth().onAuthStateChanged((user) => {
       if (user) {
         setIsLoggedIn(true);

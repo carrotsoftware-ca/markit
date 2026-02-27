@@ -7,14 +7,14 @@ import storage from "@react-native-firebase/storage";
 // Silence deprecation warnings for namespaced API
 globalThis.RNFB_SILENCE_MODULAR_DEPRECATION_WARNINGS = true;
 
-const host = process.env.EXPO_PUBLIC_EMULATOR_HOST ?? "localhost";
+const host = process.env.EXPO_PUBLIC_EMULATOR_HOST;
 
 // Initialize Firebase if needed
 if (!firebase.apps.length) {
   firebase.initializeApp();
 }
 
-if (__DEV__) {
+if (__DEV__ && host) {
   auth().useEmulator(`http://${host}:9099`);
   functions().useEmulator(host, 5001);
   firestore().useEmulator(host, 8080);
