@@ -1,4 +1,5 @@
 const admin = require("firebase-admin");
+const { FieldValue } = require("firebase-admin/firestore");
 const { defineSecret } = require("firebase-functions/params");
 const { HttpsError, onCall } = require("firebase-functions/v2/https");
 const { v4: uuidv4 } = require("uuid");
@@ -165,7 +166,7 @@ const activatePortal = onCall(async (request) => {
     const uid = request.auth.uid;
     const sessionRef = projectRef.collection("portalSessions").doc(uid);
     const sessionSnap = await sessionRef.get();
-    const now = admin.firestore.FieldValue.serverTimestamp();
+    const now = FieldValue.serverTimestamp();
 
     if (!sessionSnap.exists) {
       // First visit on this device — create the session doc.
