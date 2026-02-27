@@ -267,9 +267,12 @@ const disablePortal = onCall(async (request) => {
   if (email) {
     const seed = `portal_email_${email.toLowerCase().trim()}`;
     const uid = "portal_" + crypto.createHash("sha256").update(seed).digest("hex").slice(0, 28);
-    await admin.auth().deleteUser(uid).catch(() => {
-      // User may not exist yet (portal was never opened) — that's fine.
-    });
+    await admin
+      .auth()
+      .deleteUser(uid)
+      .catch(() => {
+        // User may not exist yet (portal was never opened) — that's fine.
+      });
   }
 
   return { success: true };
@@ -349,7 +352,10 @@ const deletePortal = onCall(async (request) => {
   if (email) {
     const seed = `portal_email_${email.toLowerCase().trim()}`;
     const uid = "portal_" + crypto.createHash("sha256").update(seed).digest("hex").slice(0, 28);
-    await admin.auth().deleteUser(uid).catch(() => {});
+    await admin
+      .auth()
+      .deleteUser(uid)
+      .catch(() => {});
   }
 
   // Delete all portalSession docs.
@@ -360,8 +366,8 @@ const deletePortal = onCall(async (request) => {
 
   // Clear the portal fields from the project.
   await projectRef.update({
-    portalToken: admin.firestore.FieldValue.delete(),
-    portalActive: admin.firestore.FieldValue.delete(),
+    portalToken: FieldValue.delete(),
+    portalActive: FieldValue.delete(),
   });
 
   return { success: true };

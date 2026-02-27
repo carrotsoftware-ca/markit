@@ -113,16 +113,21 @@ export async function uploadPortalFile(
 }
 
 /**
- * Fetches the portalSessions subcollection for a project.
+ * Subscribes to the portalSessions subcollection for a project in real time.
  * Only the project owner can read this (enforced by Firestore rules).
+ * Returns an unsubscribe function.
  */
-export async function getPortalSessions(projectId: string): Promise<PortalSession[]> {
+export function watchPortalSessions(
+  projectId: string,
+  onSessions: (sessions: PortalSession[]) => void,
+): () => void {
   const db = getFirestore();
-  const snap = await db
+  return db
     .collection("projects")
     .doc(projectId)
     .collection("portalSessions")
-    .get();
-
-  return snap.docs.map((doc) => doc.data() as PortalSession);
+    .onSnapshot(
+      (snap) => onSessions(snap.docs.map((doc) => doc.data() as PortalSession)),
+      () => onSessions([]),
+    );
 }

@@ -1,5 +1,5 @@
 import { useTheme } from "@/src/context/ThemeContext";
-import { getPortalSessions } from "@/src/services/projects/getPortalProject";
+import { watchPortalSessions } from "@/src/services/projects/getPortalProject";
 import {
   deletePortal,
   disablePortal,
@@ -49,11 +49,12 @@ export default function ProjectPortalCard({ project, projectId }: ProjectPortalC
   useEffect(() => {
     if (!hasPortal) return;
     setLoadingSessions(true);
-    getPortalSessions(projectId)
-      .then(setSessions)
-      .catch(() => setSessions([]))
-      .finally(() => setLoadingSessions(false));
-  }, [projectId, hasPortal, isActive]);
+    const unsub = watchPortalSessions(projectId, (data) => {
+      setSessions(data);
+      setLoadingSessions(false);
+    });
+    return unsub;
+  }, [projectId, hasPortal]);
 
   if (!hasPortal) return null;
 
@@ -134,7 +135,12 @@ export default function ProjectPortalCard({ project, projectId }: ProjectPortalC
       {/* Header row */}
       <View style={styles.headerRow}>
         <View style={styles.headerLeft}>
-          <MaterialCommunityIcons name="link-variant" size={18} color={orange} style={styles.icon} />
+          <MaterialCommunityIcons
+            name="link-variant"
+            size={18}
+            color={orange}
+            style={styles.icon}
+          />
           <Text style={[styles.sectionLabel, { color: textSecondary, fontFamily: fontBold }]}>
             PORTAL
           </Text>
@@ -218,7 +224,10 @@ export default function ProjectPortalCard({ project, projectId }: ProjectPortalC
           disabled={deleting}
           style={({ pressed }) => [
             styles.actionBtn,
-            { borderColor: theme.colors.error ?? "#EF4444", opacity: pressed || deleting ? 0.6 : 1 },
+            {
+              borderColor: theme.colors.error ?? "#EF4444",
+              opacity: pressed || deleting ? 0.6 : 1,
+            },
           ]}
         >
           {deleting ? (
