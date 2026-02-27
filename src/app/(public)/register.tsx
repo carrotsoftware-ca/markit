@@ -1,5 +1,6 @@
 import { useAuth } from "@/src/context/AuthContext";
 import { useTheme } from "@/src/context/ThemeContext";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
@@ -14,7 +15,6 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 export default function Register() {
   const { theme } = useTheme();
@@ -57,22 +57,36 @@ export default function Register() {
       style={[styles.flex, { backgroundColor: c.industrialBlack }]}
       behavior={Platform.OS === "ios" ? "padding" : undefined}
     >
-      <ScrollView
-        contentContainerStyle={styles.scroll}
-        keyboardShouldPersistTaps="handled"
-      >
+      <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Header */}
-        <Text style={[styles.title, { color: "#FFFFFF", fontFamily: t.fontFamily.bold, fontSize: t.fontSize["3xl"] }]}>
+        <Text
+          style={[
+            styles.title,
+            { color: "#FFFFFF", fontFamily: t.fontFamily.bold, fontSize: t.fontSize["3xl"] },
+          ]}
+        >
           Create Account
         </Text>
-        <Text style={[styles.subtitle, { color: c.gray[400], fontFamily: t.fontFamily.regular, fontSize: t.fontSize.sm }]}>
+        <Text
+          style={[
+            styles.subtitle,
+            { color: c.gray[400], fontFamily: t.fontFamily.regular, fontSize: t.fontSize.sm },
+          ]}
+        >
           Join the future of construction project management
         </Text>
 
         {/* Email */}
-        <Text style={[styles.label, { color: c.gray[300], fontFamily: t.fontFamily.semiBold }]}>EMAIL ADDRESS</Text>
+        <Text style={[styles.label, { color: c.gray[300], fontFamily: t.fontFamily.semiBold }]}>
+          EMAIL ADDRESS
+        </Text>
         <View style={[styles.inputRow, { backgroundColor: c.slateGray, borderColor: c.gray[700] }]}>
-          <MaterialCommunityIcons name="email-outline" size={18} color={c.gray[400]} style={styles.inputIcon} />
+          <MaterialCommunityIcons
+            name="email-outline"
+            size={18}
+            color={c.gray[400]}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={[styles.input, { color: "#FFF", fontFamily: t.fontFamily.regular }]}
             placeholder="name@company.com"
@@ -86,9 +100,21 @@ export default function Register() {
         </View>
 
         {/* Password */}
-        <Text style={[styles.label, { color: c.gray[300], fontFamily: t.fontFamily.semiBold, marginTop: 16 }]}>PASSWORD</Text>
+        <Text
+          style={[
+            styles.label,
+            { color: c.gray[300], fontFamily: t.fontFamily.semiBold, marginTop: 16 },
+          ]}
+        >
+          PASSWORD
+        </Text>
         <View style={[styles.inputRow, { backgroundColor: c.slateGray, borderColor: c.gray[700] }]}>
-          <MaterialCommunityIcons name="lock-outline" size={18} color={c.gray[400]} style={styles.inputIcon} />
+          <MaterialCommunityIcons
+            name="lock-outline"
+            size={18}
+            color={c.gray[400]}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={[styles.input, { color: "#FFF", fontFamily: t.fontFamily.regular }]}
             placeholder="••••••••"
@@ -100,9 +126,21 @@ export default function Register() {
         </View>
 
         {/* Confirm Password */}
-        <Text style={[styles.label, { color: c.gray[300], fontFamily: t.fontFamily.semiBold, marginTop: 16 }]}>CONFIRM PASSWORD</Text>
+        <Text
+          style={[
+            styles.label,
+            { color: c.gray[300], fontFamily: t.fontFamily.semiBold, marginTop: 16 },
+          ]}
+        >
+          CONFIRM PASSWORD
+        </Text>
         <View style={[styles.inputRow, { backgroundColor: c.slateGray, borderColor: c.gray[700] }]}>
-          <MaterialCommunityIcons name="lock-check-outline" size={18} color={c.gray[400]} style={styles.inputIcon} />
+          <MaterialCommunityIcons
+            name="lock-check-outline"
+            size={18}
+            color={c.gray[400]}
+            style={styles.inputIcon}
+          />
           <TextInput
             style={[styles.input, { color: "#FFF", fontFamily: t.fontFamily.regular }]}
             placeholder="••••••••"
@@ -115,24 +153,36 @@ export default function Register() {
 
         {/* Register button */}
         <Pressable
-          style={({ pressed }) => [styles.btn, { backgroundColor: c.safetyOrange, opacity: pressed ? 0.85 : 1 }]}
+          style={({ pressed }) => [
+            styles.btn,
+            { backgroundColor: c.safetyOrange, opacity: pressed ? 0.85 : 1 },
+          ]}
           onPress={handleRegister}
           disabled={loading}
         >
           {loading ? (
             <ActivityIndicator color="#FFF" />
           ) : (
-            <Text style={[styles.btnText, { fontFamily: t.fontFamily.bold }]}>Create Account →</Text>
+            <Text style={[styles.btnText, { fontFamily: t.fontFamily.bold }]}>
+              Create Account →
+            </Text>
           )}
         </Pressable>
 
         {/* Login link */}
         <View style={styles.loginRow}>
-          <Text style={[styles.loginText, { color: c.gray[400], fontFamily: t.fontFamily.regular }]}>
+          <Text
+            style={[styles.loginText, { color: c.gray[400], fontFamily: t.fontFamily.regular }]}
+          >
             Already have an account?{" "}
           </Text>
           <Pressable onPress={() => router.replace("/login")}>
-            <Text style={[styles.loginLink, { color: c.safetyOrange, fontFamily: t.fontFamily.regular }]}>
+            <Text
+              style={[
+                styles.loginLink,
+                { color: c.safetyOrange, fontFamily: t.fontFamily.regular },
+              ]}
+            >
               Sign in
             </Text>
           </Pressable>

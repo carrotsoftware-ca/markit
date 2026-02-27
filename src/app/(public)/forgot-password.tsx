@@ -4,15 +4,15 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
 import {
-  ActivityIndicator,
-  Alert,
-  KeyboardAvoidingView,
-  Platform,
-  Pressable,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Alert,
+    KeyboardAvoidingView,
+    Platform,
+    Pressable,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 export default function ForgotPassword() {
@@ -49,10 +49,20 @@ export default function ForgotPassword() {
     >
       <View style={styles.container}>
         {/* Header */}
-        <Text style={[styles.title, { color: "#FFFFFF", fontFamily: t.fontFamily.bold, fontSize: t.fontSize["3xl"] }]}>
+        <Text
+          style={[
+            styles.title,
+            { color: "#FFFFFF", fontFamily: t.fontFamily.bold, fontSize: t.fontSize["3xl"] },
+          ]}
+        >
           Reset Password
         </Text>
-        <Text style={[styles.subtitle, { color: c.gray[400], fontFamily: t.fontFamily.regular, fontSize: t.fontSize.sm }]}>
+        <Text
+          style={[
+            styles.subtitle,
+            { color: c.gray[400], fontFamily: t.fontFamily.regular, fontSize: t.fontSize.sm },
+          ]}
+        >
           {sent
             ? `A reset link has been sent to ${email}`
             : "Enter your email and we'll send you a reset link"}
@@ -63,8 +73,15 @@ export default function ForgotPassword() {
             <Text style={[styles.label, { color: c.gray[300], fontFamily: t.fontFamily.semiBold }]}>
               EMAIL ADDRESS
             </Text>
-            <View style={[styles.inputRow, { backgroundColor: c.slateGray, borderColor: c.gray[700] }]}>
-              <MaterialCommunityIcons name="email-outline" size={18} color={c.gray[400]} style={styles.inputIcon} />
+            <View
+              style={[styles.inputRow, { backgroundColor: c.slateGray, borderColor: c.gray[700] }]}
+            >
+              <MaterialCommunityIcons
+                name="email-outline"
+                size={18}
+                color={c.gray[400]}
+                style={styles.inputIcon}
+              />
               <TextInput
                 style={[styles.input, { color: "#FFF", fontFamily: t.fontFamily.regular }]}
                 placeholder="name@company.com"
@@ -79,14 +96,19 @@ export default function ForgotPassword() {
             </View>
 
             <Pressable
-              style={({ pressed }) => [styles.btn, { backgroundColor: c.safetyOrange, opacity: pressed ? 0.85 : 1 }]}
+              style={({ pressed }) => [
+                styles.btn,
+                { backgroundColor: c.safetyOrange, opacity: pressed ? 0.85 : 1 },
+              ]}
               onPress={handleReset}
               disabled={loading}
             >
               {loading ? (
                 <ActivityIndicator color="#FFF" />
               ) : (
-                <Text style={[styles.btnText, { fontFamily: t.fontFamily.bold }]}>Send Reset Link →</Text>
+                <Text style={[styles.btnText, { fontFamily: t.fontFamily.bold }]}>
+                  Send Reset Link →
+                </Text>
               )}
             </Pressable>
           </>
@@ -94,7 +116,10 @@ export default function ForgotPassword() {
 
         {sent && (
           <Pressable
-            style={({ pressed }) => [styles.btn, { backgroundColor: c.safetyOrange, opacity: pressed ? 0.85 : 1 }]}
+            style={({ pressed }) => [
+              styles.btn,
+              { backgroundColor: c.safetyOrange, opacity: pressed ? 0.85 : 1 },
+            ]}
             onPress={() => router.replace("/login")}
           >
             <Text style={[styles.btnText, { fontFamily: t.fontFamily.bold }]}>Back to Sign In</Text>
