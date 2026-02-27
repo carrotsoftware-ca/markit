@@ -166,3 +166,5 @@ const activatePortal = onCall(async (request) => {
 
   return { success: true };
 });
+
+module.exports = { generatePortalToken, sendPortalInvite, activatePortal };
