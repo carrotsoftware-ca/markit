@@ -29,8 +29,7 @@ export default ({ config }) => ({
         ITSAppUsesNonExemptEncryption: false,
         NSPhotoLibraryUsageDescription:
           "Allow markit to access your photo library to upload images and videos to your projects.",
-        NSMicrophoneUsageDescription:
-          "Allow markit to access your microphone for video uploads.",
+        NSMicrophoneUsageDescription: "Allow markit to access your microphone for video uploads.",
         NSCameraUsageDescription:
           "Allow markit to access your camera to photograph job sites for measurement.",
       },
@@ -46,7 +45,52 @@ export default ({ config }) => ({
       edgeToEdgeEnabled: true,
       predictiveBackGestureEnabled: false,
       package: "com.carrotsoftware.markit",
-
+      intentFilters: [
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "markitquote.com",
+              pathPrefix: "/portal/",
+            },
+            {
+              scheme: "https",
+              host: "www.markitquote.com",
+              pathPrefix: "/portal/",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+        {
+          action: "VIEW",
+          autoVerify: true,
+          data: [
+            {
+              scheme: "https",
+              host: "markitquote.com",
+              path: "/validate/password",
+            },
+            {
+              scheme: "https",
+              host: "www.markitquote.com",
+              path: "/validate/password",
+            },
+            {
+              scheme: "https",
+              host: "markitquote.com",
+              path: "/reset/password",
+            },
+            {
+              scheme: "https",
+              host: "www.markitquote.com",
+              path: "/reset/password",
+            },
+          ],
+          category: ["BROWSABLE", "DEFAULT"],
+        },
+      ],
     },
     web: {
       output: "static",
@@ -72,8 +116,7 @@ export default ({ config }) => ({
         {
           photosPermission:
             "Allow markit to access your photo library to upload images and videos to your projects.",
-          microphonePermission:
-            "Allow markit to access your microphone for video uploads.",
+          microphonePermission: "Allow markit to access your microphone for video uploads.",
           cameraPermission:
             "Allow markit to access your camera to photograph job sites for measurement.",
         },
