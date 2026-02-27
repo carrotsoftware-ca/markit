@@ -10,6 +10,7 @@ module.exports = {
     "eslint:recommended",
     "google",
   ],
+  ignorePatterns: ["lib/**", "index.js"],
   rules: {
     "no-restricted-globals": ["error", "name", "length"],
     "prefer-arrow-callback": "error",
