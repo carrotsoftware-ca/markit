@@ -107,7 +107,7 @@ export default function ProjectDetailsScreen() {
         <DetailsWrapper.HeaderAction>
           <Pressable onPress={handleInviteClient} disabled={inviting} style={{ marginRight: 16 }}>
             <MaterialCommunityIcons
-              name="email-send-outline"
+              name="email-arrow-right-outline"
               size={24}
               color={inviting ? theme.colors.text.secondary : theme.colors.safetyOrange}
             />

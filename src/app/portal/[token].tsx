@@ -1,12 +1,20 @@
 import {
-    getPortalEvents,
-    getPortalFiles,
-    getProjectByToken,
+  getPortalEvents,
+  getPortalFiles,
+  getProjectByToken,
 } from "@/src/services/projects/getPortalProject";
-import { MarkitEvent, MeasurementEvent, NormalizedPoint, Project, ProjectFile } from "@/src/types";
-import { useLocalSearchParams } from "expo-router";
-import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
-import { ActivityIndicator, Image, ScrollView, StyleSheet, Text, View } from "react-native";
+import { MarkitEvent, Project, ProjectFile } from "@/src/types";
+import { useLocalSearchParams, useRouter } from "expo-router";
+import React, { useEffect, useLayoutEffect, useState } from "react";
+import {
+  ActivityIndicator,
+  Image,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  View,
+} from "react-native";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -19,179 +27,56 @@ function getActiveEvents(events: MarkitEvent[]): MarkitEvent[] {
   return events.filter((e) => e.type !== "delete" && !deleted.has(e.id));
 }
 
-function getLatestCalibration(events: MarkitEvent[]) {
-  const confirmed = events
-    .filter((e) => e.type === "calibration_confirmed")
-    .sort((a, b) => b.createdAt.localeCompare(a.createdAt));
-  return confirmed[0] as (MarkitEvent & { intrinsicScale: number }) | undefined;
-}
-
-function distance(a: NormalizedPoint, b: NormalizedPoint, w: number, h: number) {
-  const dx = (b.x - a.x) * w;
-  const dy = (b.y - a.y) * h;
-  return Math.sqrt(dx * dx + dy * dy);
-}
-
-function recomputeDistance(
-  event: MeasurementEvent,
-  intrinsicScale: number,
-  imageW: number,
-  imageH: number,
-): string {
-  const px = distance(event.start, event.end, imageW, imageH);
-  const inches = px * intrinsicScale;
-  const feet = Math.floor(inches / 12);
-  const rem = inches % 12;
-  if (feet === 0) return `${rem.toFixed(1)}in`;
-  return `${feet}ft ${rem.toFixed(1)}in`;
-}
-
 // ---------------------------------------------------------------------------
-// Measurement overlay (SVG drawn on top of an image)
+// File list row
 // ---------------------------------------------------------------------------
 
-interface OverlayProps {
-  events: MarkitEvent[];
-  imageWidth: number;
-  imageHeight: number;
-}
-
-function MeasurementOverlay({ events, imageWidth, imageHeight }: OverlayProps) {
-  if (imageWidth === 0 || imageHeight === 0) return null;
-
-  const active = getActiveEvents(events);
-  const calibration = getLatestCalibration(active);
-  const measurements = active.filter((e) => e.type === "measurement") as MeasurementEvent[];
-
-  return (
-    // @ts-ignore — svg is valid HTML on web
-    <svg
-      style={{
-        position: "absolute",
-        top: 0,
-        left: 0,
-        width: imageWidth,
-        height: imageHeight,
-        pointerEvents: "none",
-      }}
-      width={imageWidth}
-      height={imageHeight}
-    >
-      {measurements.map((m) => {
-        const x1 = m.start.x * imageWidth;
-        const y1 = m.start.y * imageHeight;
-        const x2 = m.end.x * imageWidth;
-        const y2 = m.end.y * imageHeight;
-        const mx = (x1 + x2) / 2;
-        const my = (y1 + y2) / 2;
-
-        const label = calibration
-          ? recomputeDistance(m, calibration.intrinsicScale, imageWidth, imageHeight)
-          : m.distanceText;
-
-        return (
-          // @ts-ignore
-          <g key={m.id}>
-            {/* Line */}
-            {/* @ts-ignore */}
-            <line
-              x1={x1}
-              y1={y1}
-              x2={x2}
-              y2={y2}
-              stroke="#FF6B00"
-              strokeWidth={2}
-              strokeLinecap="round"
-            />
-            {/* End caps */}
-            {/* @ts-ignore */}
-            <circle cx={x1} cy={y1} r={4} fill="#FF6B00" />
-            {/* @ts-ignore */}
-            <circle cx={x2} cy={y2} r={4} fill="#FF6B00" />
-            {/* Label background */}
-            {/* @ts-ignore */}
-            <rect
-              x={mx - 28}
-              y={my - 11}
-              width={56}
-              height={18}
-              rx={4}
-              ry={4}
-              fill="rgba(0,0,0,0.65)"
-            />
-            {/* Label text */}
-            {/* @ts-ignore */}
-            <text
-              x={mx}
-              y={my + 4}
-              textAnchor="middle"
-              fill="white"
-              fontSize={11}
-              fontFamily="sans-serif"
-              fontWeight="bold"
-            >
-              {label}
-            </text>
-          </g>
-        );
-      })}
-    </svg>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// File card with image + overlay
-// ---------------------------------------------------------------------------
-
-interface FileCardProps {
+interface FileRowProps {
   file: ProjectFile;
-  events: MarkitEvent[];
+  measurementCount: number;
+  onPress: () => void;
 }
 
-function FileCard({ file, events }: FileCardProps) {
-  const containerRef = useRef<View>(null);
-  const [dims, setDims] = useState({ width: 0, height: 0 });
-
-  if (!file.url) return null;
-
-  const hasMeasurements = getActiveEvents(events).some((e) => e.type === "measurement");
+function FileRow({ file, measurementCount, onPress }: FileRowProps) {
+  const displayName = file.name || file.filename;
+  const dateStr = file.date
+    ? new Date(file.date).toLocaleDateString(undefined, {
+        month: "short",
+        day: "numeric",
+        year: "numeric",
+      })
+    : "";
 
   return (
-    <View style={styles.fileCard}>
-      <Text style={styles.fileLabel}>{file.name || file.filename}</Text>
-      <View
-        // @ts-ignore
-        ref={containerRef}
-        style={styles.imageContainer}
-        onLayout={(e) => {
-          const { width } = e.nativeEvent.layout;
-          // maintain aspect ratio — default to 9:16 until image loads
-          Image.getSize(
-            file.url!,
-            (iw, ih) => setDims({ width, height: (ih / iw) * width }),
-            () => setDims({ width, height: width * (9 / 16) }),
-          );
-        }}
-      >
-        {dims.width > 0 && (
-          <>
-            <Image
-              source={{ uri: file.url }}
-              style={{ width: dims.width, height: dims.height }}
-              resizeMode="contain"
-            />
-            {hasMeasurements && (
-              <MeasurementOverlay
-                events={events}
-                imageWidth={dims.width}
-                imageHeight={dims.height}
-              />
-            )}
-          </>
+    <Pressable
+      onPress={onPress}
+      style={({ pressed }) => [styles.fileRow, pressed && styles.fileRowPressed]}
+    >
+      {/* Thumbnail */}
+      <View style={styles.thumb}>
+        {file.url ? (
+          <Image source={{ uri: file.url }} style={styles.thumbImage} resizeMode="cover" />
+        ) : (
+          <Text style={styles.thumbPlaceholder}>📄</Text>
         )}
       </View>
-      {file.notes ? <Text style={styles.fileNotes}>{file.notes}</Text> : null}
-    </View>
+
+      {/* Info */}
+      <View style={styles.fileRowInfo}>
+        <Text style={styles.fileRowName} numberOfLines={1}>
+          {displayName}
+        </Text>
+        <Text style={styles.fileRowMeta}>
+          {dateStr}
+          {measurementCount > 0
+            ? `  ·  ${measurementCount} measurement${measurementCount !== 1 ? "s" : ""}`
+            : ""}
+        </Text>
+      </View>
+
+      {/* Chevron */}
+      <Text style={styles.chevron}>›</Text>
+    </Pressable>
   );
 }
 
@@ -203,6 +88,7 @@ type FileWithEvents = { file: ProjectFile; events: MarkitEvent[] };
 
 export default function PortalPage() {
   const { token } = useLocalSearchParams<{ token: string }>();
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [revoked, setRevoked] = useState(false);
@@ -267,6 +153,19 @@ export default function PortalPage() {
     );
   }
 
+  const handleFilePress = (item: FileWithEvents) => {
+    if (!item.file.url) return;
+    router.push({
+      pathname: "/portal/measure",
+      params: {
+        fileUrl: item.file.url,
+        projectId: project.id,
+        fileId: item.file.id,
+      },
+    });
+  };
+
+  // File list view
   return (
     <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
       {/* Header */}
@@ -287,11 +186,24 @@ export default function PortalPage() {
 
       <View style={styles.divider} />
 
-      {/* Files */}
+      {/* File list */}
       {items.length === 0 ? (
         <Text style={styles.emptyText}>No files have been added to this project yet.</Text>
       ) : (
-        items.map(({ file, events }) => <FileCard key={file.id} file={file} events={events} />)
+        <View style={styles.fileList}>
+          {items.map((item) => {
+            const active = getActiveEvents(item.events);
+            const measurementCount = active.filter((e) => e.type === "measurement").length;
+            return (
+              <FileRow
+                key={item.file.id}
+                file={item.file}
+                measurementCount={measurementCount}
+                onPress={() => handleFilePress(item)}
+              />
+            );
+          })}
+        </View>
       )}
 
       <Text style={styles.footer}>Powered by markit!</Text>
@@ -341,34 +253,42 @@ const styles = StyleSheet.create({
 
   divider: { height: 1, backgroundColor: "#333", marginHorizontal: 24, marginVertical: 8 },
 
-  fileCard: {
+  // File list
+  fileList: {
     marginHorizontal: 24,
-    marginVertical: 12,
+    marginTop: 8,
     backgroundColor: CARD,
     borderRadius: 12,
     overflow: "hidden",
   },
-  fileLabel: {
-    color: TEXT,
-    fontWeight: "600",
-    fontSize: 14,
-    padding: 14,
-    paddingBottom: 8,
+  fileRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    paddingVertical: 12,
+    paddingHorizontal: 14,
+    borderBottomWidth: 1,
+    borderBottomColor: "#2e2e2e",
   },
-  imageContainer: {
-    width: "100%" as any,
+  fileRowPressed: { backgroundColor: "#2e2e2e" },
+  thumb: {
+    width: 52,
+    height: 52,
+    borderRadius: 8,
     backgroundColor: "#111",
-    position: "relative",
+    overflow: "hidden",
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: 14,
+    flexShrink: 0,
   },
-  fileNotes: {
-    color: MUTED,
-    fontSize: 13,
-    padding: 14,
-    paddingTop: 8,
-  },
+  thumbImage: { width: 52, height: 52 },
+  thumbPlaceholder: { fontSize: 24 },
+  fileRowInfo: { flex: 1, marginRight: 8 },
+  fileRowName: { color: TEXT, fontWeight: "600", fontSize: 15, marginBottom: 4 },
+  fileRowMeta: { color: MUTED, fontSize: 13 },
+  chevron: { color: MUTED, fontSize: 24, lineHeight: 28 },
 
   emptyText: { color: MUTED, textAlign: "center", marginTop: 48, fontSize: 15 },
-
   footer: { color: "#444", textAlign: "center", fontSize: 12, marginTop: 48 },
 
   revokedIcon: { fontSize: 48, marginBottom: 16 },

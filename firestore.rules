@@ -32,8 +32,8 @@ service cloud.firestore {
           allow update: if false;
           allow delete: if false;
 
-          // Unauthenticated portal read
-          allow read: if get(/databases/$(database)/documents/projects/$(projectId)).data.portalActive == true
+          // Unauthenticated portal read + write (add measurements via portal)
+          allow read, create: if get(/databases/$(database)/documents/projects/$(projectId)).data.portalActive == true
                       && get(/databases/$(database)/documents/projects/$(projectId)).data.portalToken != null;
         }
       }
