@@ -10,6 +10,7 @@ import { unstable_batchedUpdates } from "react-native";
 import { getUser, insertUser, updateUser, upsertUser } from "@services/user";
 
 const AuthContext = createContext<AuthStateType>({
+  user: null,
   isLoggedIn: false,
   isReady: false,
   login: () => {},

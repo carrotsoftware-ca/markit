@@ -41,3 +41,16 @@ export function formatTimestamp(value: any): string {
 
   return formatDistanceToNow(date, { addSuffix: true });
 }
+
+/**
+ * Converts a Firestore Timestamp, ISO string, or plain { seconds } object to
+ * a Unix timestamp in milliseconds. Returns 0 for null / undefined / unknown
+ * values so callers can safely subtract for numeric sorting.
+ */
+export function toUnixMs(value: any): number {
+  if (!value) return 0;
+  if (typeof value === "string") return new Date(value).getTime();
+  if (typeof value.toMillis === "function") return value.toMillis();
+  if (typeof value.seconds === "number") return value.seconds * 1000;
+  return 0;
+}

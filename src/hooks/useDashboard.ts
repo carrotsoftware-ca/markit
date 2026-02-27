@@ -1,6 +1,7 @@
 import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { Project } from "@/src/types";
+import { toUnixMs } from "@/src/utils/formatTimestamp";
 import { useMemo } from "react";
 
 export interface DashboardStats {
@@ -25,14 +26,15 @@ function getGreeting(): string {
 }
 
 export function useDashboard(): DashboardData {
-  const { user } = useAuth();
+  const auth = useAuth();
   const { projects } = useProjects();
+  const user = auth ? auth.user : null;
+  const userDisplayName = user ? user.displayName : null;
 
   const displayName = useMemo(() => {
-    if (!user?.displayName) return "";
-    // Use first name only
-    return user.displayName.split(" ")[0];
-  }, [user?.displayName]);
+    if (!userDisplayName) return "";
+    return userDisplayName.split(" ")[0];
+  }, [userDisplayName]);
 
   const stats = useMemo<DashboardStats>(
     () => ({
@@ -47,12 +49,9 @@ export function useDashboard(): DashboardData {
   const recentProjects = useMemo(
     () =>
       [...projects]
-        .sort((a, b) => {
-          // Sort by updatedAt or createdAt descending
-          const aTime = a.updatedAt ?? a.createdAt ?? "";
-          const bTime = b.updatedAt ?? b.createdAt ?? "";
-          return bTime.localeCompare(aTime);
-        })
+        .sort((a, b) =>
+          toUnixMs(b.updatedAt ?? b.createdAt) - toUnixMs(a.updatedAt ?? a.createdAt),
+        )
         .slice(0, 3),
     [projects],
   );

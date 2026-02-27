@@ -2,8 +2,8 @@ import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
 import { DashboardGreeting } from "@/src/components/ui/dashboard/DashboardGreeting";
 import {
-    DashboardQuickActions,
-    QuickAction,
+  DashboardQuickActions,
+  QuickAction,
 } from "@/src/components/ui/dashboard/DashboardQuickActions";
 import { DashboardRecentProjects } from "@/src/components/ui/dashboard/DashboardRecentProjects";
 import { DashboardStatsBar } from "@/src/components/ui/dashboard/DashboardStatsBar";
@@ -63,11 +63,8 @@ export default function DashboardScreen() {
             contentContainerStyle={styles.scroll}
           >
             <DashboardGreeting greeting={greeting} displayName={displayName} />
-
             {stats.total > 0 && <DashboardStatsBar stats={stats} />}
-
             <DashboardQuickActions actions={quickActions} />
-
             <DashboardRecentProjects
               projects={recentProjects}
               onProjectPress={handleProjectPress}

@@ -5,8 +5,10 @@ export type User = {
 };
 
 export type AuthStateType = {
+  user: User | null;
   isLoggedIn: boolean;
   isReady: boolean;
-  login: () => void;
-  logout: () => void;
+  login: (type?: string, credentials?: any) => void;
+  logout: (type?: string) => void;
+  register: (credentials: { email: string; password: string }) => void;
 };
