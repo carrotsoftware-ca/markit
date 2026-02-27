@@ -83,13 +83,29 @@ service cloud.firestore {
           // No one can update or hard-delete an event
           allow update, delete: if false;
 
-          // Portal: read valid events + append measurement events only.
-          // Field validation prevents portal clients from writing fake
-          // calibration, delete, or other privileged event types.
+          // Portal: read valid events + append events.
+          // Allowed types: measurement, calibration_line, calibration_confirmed,
+          // and soft-delete. Hard writes of arbitrary fields are still blocked
+          // by the per-type field checks below.
           allow read: if isValidPortalToken(projectId);
           allow create: if isValidPortalToken(projectId)
-                        && request.resource.data.type == "measurement"
-                        && request.resource.data.keys().hasAll(["type", "start", "end", "createdAt"]);
+                        && (
+                          // Measurement event
+                          (request.resource.data.type == "measurement"
+                            && request.resource.data.keys().hasAll(["type", "start", "end", "createdAt", "distanceText"]))
+                          ||
+                          // Calibration line event
+                          (request.resource.data.type == "calibration_line"
+                            && request.resource.data.keys().hasAll(["type", "start", "end", "createdAt"]))
+                          ||
+                          // Calibration confirmed event
+                          (request.resource.data.type == "calibration_confirmed"
+                            && request.resource.data.keys().hasAll(["type", "intrinsicScale", "refInput", "calibrationLineEventId", "createdAt"]))
+                          ||
+                          // Soft delete event
+                          (request.resource.data.type == "delete"
+                            && request.resource.data.keys().hasAll(["type", "targetEventId", "createdAt"]))
+                        );
         }
       }
     }
