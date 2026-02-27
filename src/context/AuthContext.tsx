@@ -78,14 +78,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // cached contractor session never sneaks past the auth gate against a
     // fresh emulator. We skip this for anonymous users — those are portal
     // clients whose session should persist.
-    if (__DEV__) {
-      const currentUser = getAuth().currentUser;
-      if (currentUser && !currentUser.isAnonymous) {
-        getAuth()
-          .signOut()
-          .catch(() => {});
-      }
-    }
+    // NOTE: re-enable this block when developing against the emulator to prevent
+    // stale sessions persisting across emulator wipes.
+    // if (__DEV__) {
+    //   const currentUser = getAuth().currentUser;
+    //   if (currentUser && !currentUser.isAnonymous) {
+    //     getAuth()
+    //       .signOut()
+    //       .catch(() => {});
+    //   }
+    // }
 
     const unsubscribe = getAuth().onAuthStateChanged(async (user) => {
       // Anonymous users and portal custom-token users should not be treated as
