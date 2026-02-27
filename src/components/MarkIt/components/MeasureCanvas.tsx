@@ -1,9 +1,4 @@
-import type {
-    AnimatedProp,
-    SkImage,
-    SkPoint,
-    Transforms3d,
-} from "@shopify/react-native-skia";
+import type { AnimatedProp, SkImage, SkPoint, Transforms3d } from "@shopify/react-native-skia";
 import {
     Canvas,
     DashPathEffect,
@@ -99,14 +94,7 @@ export function MeasureCanvas({
       {/* Layer 1 + 2 + 3: image and all stored lines inside the zoom/pan transform */}
       <Group transform={zoomTransform}>
         {image && (
-          <Image
-            image={image}
-            x={0}
-            y={0}
-            width={imageWidth}
-            height={imageHeight}
-            fit="contain"
-          />
+          <Image image={image} x={0} y={0} width={imageWidth} height={imageHeight} fit="contain" />
         )}
 
         {/* Committed measurement lines — image-space coords, track zoom/pan */}
@@ -140,10 +128,7 @@ export function MeasureCanvas({
               height={LIVE_PILL_H}
               r={8}
               color="rgba(18, 24, 38, 0.85)"
-              transform={[
-                { translateX: -LIVE_PILL_W / 2 },
-                { translateY: -LIVE_PILL_H / 2 },
-              ]}
+              transform={[{ translateX: -LIVE_PILL_W / 2 }, { translateY: -LIVE_PILL_H / 2 }]}
             />
             <Text
               x={labelX}

@@ -38,9 +38,7 @@ export function MeasurementLine({ line, font, zoomLevel }: Props) {
 
   // measureText is not implemented on web — use a fixed fallback width instead
   const textWidth =
-    font && Platform.OS !== "web"
-      ? font.measureText(label).width
-      : label.length * 8;
+    font && Platform.OS !== "web" ? font.measureText(label).width : label.length * 8;
   const pillW = textWidth + PILL_PADDING_X * 2;
 
   // Counter-scale transform: keeps the pill at a constant screen size.
@@ -101,17 +99,7 @@ export function MeasurementLine({ line, font, zoomLevel }: Props) {
  * Draws a short perpendicular tick mark at the end of a line segment.
  * The tick is perpendicular to the direction from (x,y) toward (x2,y2).
  */
-function EndTick({
-  x,
-  y,
-  x2,
-  y2,
-}: {
-  x: number;
-  y: number;
-  x2: number;
-  y2: number;
-}) {
+function EndTick({ x, y, x2, y2 }: { x: number; y: number; x2: number; y2: number }) {
   const dx = x2 - x;
   const dy = y2 - y;
   const len = Math.sqrt(dx * dx + dy * dy) || 1;
