@@ -159,9 +159,7 @@ const getPortalCustomToken = onCall(async (request) => {
 
   // Derive a stable UID from the client email. If there's no email on the
   // project (shouldn't happen in practice) fall back to a token-based UID.
-  const seed = email
-    ? `portal_email_${email.toLowerCase().trim()}`
-    : `portal_token_${token}`;
+  const seed = email ? `portal_email_${email.toLowerCase().trim()}` : `portal_token_${token}`;
   const uid = "portal_" + crypto.createHash("sha256").update(seed).digest("hex").slice(0, 28);
 
   const customToken = await admin.auth().createCustomToken(uid, { portal: true, email });
