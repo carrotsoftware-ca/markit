@@ -92,9 +92,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       // logged-in contractors. Check for the `portal` claim we stamp on every
       // custom token minted by getPortalCustomToken.
       if (user && !user.isAnonymous) {
-        const idTokenResult = await user.getIdTokenResult();
-        if (idTokenResult.claims.portal) {
-          // Portal client — treat as logged-out contractor
+        try {
+          const idTokenResult = await user.getIdTokenResult();
+          if (idTokenResult.claims.portal) {
+            // Portal client — treat as logged-out contractor
+            setIsLoggedIn(false);
+            setUser(null);
+            setIsReady(true);
+            return;
+          }
+        } catch {
+          // User signed out between the auth state event and the token fetch —
+          // treat as logged-out and let the next onAuthStateChanged(null) fire.
           setIsLoggedIn(false);
           setUser(null);
           setIsReady(true);
