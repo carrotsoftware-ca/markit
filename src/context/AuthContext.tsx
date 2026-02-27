@@ -4,13 +4,7 @@ import * as googleAuth from "@/src/services/auth/google";
 import { getAuth } from "@/src/services/firebase";
 import { AuthStateType, User } from "@types";
 import { useRouter } from "expo-router";
-import React, {
-  createContext,
-  ReactNode,
-  useContext,
-  useEffect,
-  useState,
-} from "react";
+import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
 
 import { getUser, insertUser, updateUser, upsertUser } from "@services/user";
 
@@ -19,6 +13,7 @@ const AuthContext = createContext<AuthStateType>({
   isReady: false,
   login: () => {},
   logout: () => {},
+  register: () => {},
 });
 
 const authenticators = {
@@ -45,8 +40,23 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       await upsertUser(userData);
     } catch (error) {
-      console.log(error)
-    }finally{
+      console.log(error);
+    } finally {
+      setIsLoggedIn(true);
+      setUser(userData);
+      router.replace("/");
+    }
+  };
+
+  const register = async (credentials: { email: string; password: string }) => {
+    const userData = await emailAuth.register(credentials);
+    if (!userData) return;
+    userData.authenticatorType = "email";
+    try {
+      await upsertUser(userData);
+    } catch (error) {
+      console.log(error);
+    } finally {
       setIsLoggedIn(true);
       setUser(userData);
       router.replace("/");
@@ -67,7 +77,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     // caches the session in AsyncStorage. Sign out immediately so a stale
     // cached user never sneaks past the auth gate against a fresh emulator.
     if (__DEV__) {
-      getAuth().signOut().catch(() => {});
+      getAuth()
+        .signOut()
+        .catch(() => {});
     }
 
     const unsubscribe = getAuth().onAuthStateChanged((user) => {
@@ -95,6 +107,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         isLoggedIn,
         login,
         logout,
+        register,
         getUser,
         insertUser,
         upsertUser,
