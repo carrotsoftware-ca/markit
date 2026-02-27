@@ -44,7 +44,7 @@ export const ProjectsProvider = ({ children }) => {
     return projectId;
   };
   const handleWatchedProjects = () => {
-    if (!user?.id) throw new Error("User not authenticated");
+    if (!user?.id) return () => {};
     return watchProjects(setProjects, user.id);
   };
   const handleWatchProject = (projectId: string) => {
