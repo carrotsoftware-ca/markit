@@ -1,5 +1,5 @@
 import { getFirestore, getStorage } from "@/src/services/firebase";
-import { MarkitEvent, Project, ProjectFile } from "@/src/types";
+import { MarkitEvent, PortalSession, Project, ProjectFile } from "@/src/types";
 import { Platform } from "react-native";
 
 /**
@@ -110,4 +110,19 @@ export async function uploadPortalFile(
   const url = await storageRef.getDownloadURL();
   await fileRef.update({ status: "done", url });
   return { fileId, url };
+}
+
+/**
+ * Fetches the portalSessions subcollection for a project.
+ * Only the project owner can read this (enforced by Firestore rules).
+ */
+export async function getPortalSessions(projectId: string): Promise<PortalSession[]> {
+  const db = getFirestore();
+  const snap = await db
+    .collection("projects")
+    .doc(projectId)
+    .collection("portalSessions")
+    .get();
+
+  return snap.docs.map((doc) => doc.data() as PortalSession);
 }

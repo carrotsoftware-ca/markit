@@ -1,6 +1,6 @@
 import ConfirmDialog from "@/src/components/ui/ConfirmDialog";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
-import { ProjectAssets, ProjectDescription, UploadedFiles } from "@/src/components/ui/projects";
+import { ProjectAssets, ProjectDescription, ProjectPortalCard, UploadedFiles } from "@/src/components/ui/projects";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { takePhoto } from "@/src/hooks/useCamera";
@@ -137,6 +137,9 @@ export default function ProjectDetailsScreen() {
               description={project?.description}
               client_email={project?.client_email}
             />
+            {project && (
+              <ProjectPortalCard project={project} projectId={projectId as string} />
+            )}
             <ProjectAssets onUpload={handleUpload} onCamera={handleCamera} />
             <UploadedFiles
               files={files}

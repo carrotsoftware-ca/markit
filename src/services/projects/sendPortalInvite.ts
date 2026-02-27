@@ -43,3 +43,29 @@ export async function activatePortal(
 ): Promise<void> {
   await getFunctions().httpsCallable("activatePortal")({ token, platform });
 }
+
+/**
+ * Soft-revokes the portal. Sets portalActive: false and deletes the Firebase
+ * Auth user so the custom token can no longer be exchanged. The portalToken
+ * is preserved so the contractor can re-enable without resending an invite.
+ */
+export async function disablePortal(projectId: string): Promise<void> {
+  await getFunctions().httpsCallable("disablePortal")({ projectId });
+}
+
+/**
+ * Re-enables a previously disabled portal. The Firebase Auth user will be
+ * recreated automatically on the client's next portal visit.
+ */
+export async function enablePortal(projectId: string): Promise<void> {
+  await getFunctions().httpsCallable("enablePortal")({ projectId });
+}
+
+/**
+ * Hard-deletes the portal. Clears the portal token, deletes the Firebase Auth
+ * user and all portalSession docs. The client's link is permanently dead.
+ * The contractor must send a new invite to share the portal again.
+ */
+export async function deletePortal(projectId: string): Promise<void> {
+  await getFunctions().httpsCallable("deletePortal")({ projectId });
+}
