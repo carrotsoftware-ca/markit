@@ -5,6 +5,7 @@ import { getAuth } from "@/src/services/firebase";
 import { AuthStateType, User } from "@types";
 import { useRouter } from "expo-router";
 import React, { createContext, ReactNode, useContext, useEffect, useState } from "react";
+import { unstable_batchedUpdates } from "react-native";
 
 import { getUser, insertUser, updateUser, upsertUser } from "@services/user";
 
@@ -89,39 +90,51 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     //   }
     // }
 
-    const unsubscribe = getAuth().onAuthStateChanged(async (user) => {
+    const unsubscribe = getAuth().onAuthStateChanged(async (firebaseUser) => {
       // Anonymous users and portal custom-token users should not be treated as
       // logged-in contractors. Check for the `portal` claim we stamp on every
       // custom token minted by getPortalCustomToken.
-      if (user && !user.isAnonymous) {
+      if (firebaseUser && !firebaseUser.isAnonymous) {
         try {
-          const idTokenResult = await user.getIdTokenResult();
+          const idTokenResult = await firebaseUser.getIdTokenResult();
           if (idTokenResult.claims.portal) {
-            // Portal client — treat as logged-out contractor
-            setIsLoggedIn(false);
-            setUser(null);
-            setIsReady(true);
+            // Portal client — treat as logged-out contractor. All three state
+            // updates in one batch so no intermediate renders can sneak through.
+            unstable_batchedUpdates(() => {
+              setIsReady(true);
+              setIsLoggedIn(false);
+              setUser(null);
+            });
             return;
           }
         } catch {
           // User signed out between the auth state event and the token fetch —
           // treat as logged-out and let the next onAuthStateChanged(null) fire.
-          setIsLoggedIn(false);
-          setUser(null);
-          setIsReady(true);
+          unstable_batchedUpdates(() => {
+            setIsReady(true);
+            setIsLoggedIn(false);
+            setUser(null);
+          });
           return;
         }
-        setIsLoggedIn(true);
-        setUser({
-          id: user.uid,
-          displayName: user.displayName,
-          email: user.email,
+        // Set user first so ProjectsContext has a valid user.id before
+        // isLoggedIn flips to true and the dashboard mounts.
+        unstable_batchedUpdates(() => {
+          setUser({
+            id: firebaseUser.uid,
+            displayName: firebaseUser.displayName,
+            email: firebaseUser.email,
+          });
+          setIsLoggedIn(true);
+          setIsReady(true);
         });
       } else {
-        setIsLoggedIn(false);
-        setUser(null);
+        unstable_batchedUpdates(() => {
+          setUser(null);
+          setIsLoggedIn(false);
+          setIsReady(true);
+        });
       }
-      setIsReady(true);
     });
     return unsubscribe;
   }, []);

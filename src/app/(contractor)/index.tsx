@@ -2,8 +2,8 @@ import AuthScreenWrapper from "@/src/components/ui/AuthScreenWrapper";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
 import { DashboardGreeting } from "@/src/components/ui/dashboard/DashboardGreeting";
 import {
-  DashboardQuickActions,
-  QuickAction,
+    DashboardQuickActions,
+    QuickAction,
 } from "@/src/components/ui/dashboard/DashboardQuickActions";
 import { DashboardRecentProjects } from "@/src/components/ui/dashboard/DashboardRecentProjects";
 import { DashboardStatsBar } from "@/src/components/ui/dashboard/DashboardStatsBar";
@@ -21,9 +21,11 @@ export default function DashboardScreen() {
 
   useFocusEffect(
     useCallback(() => {
+      if (typeof watchProjects !== "function") return;
       const unsub = watchProjects();
+      if (typeof unsub !== "function") return;
       return unsub;
-    }, []),
+    }, [watchProjects]),
   );
 
   const quickActions = useMemo<QuickAction[]>(
@@ -52,11 +54,7 @@ export default function DashboardScreen() {
   };
 
   return (
-    <AuthScreenWrapper
-      title="Dashboard"
-      subtitle="Quick look at what's going on"
-    >
-
+    <AuthScreenWrapper title="Dashboard" subtitle="Quick look at what's going on">
       <DetailsWrapper>
         <DetailsWrapper.Content>
           <ScrollView
