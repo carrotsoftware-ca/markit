@@ -43,6 +43,7 @@ interface MeasureCanvasProps {
   // index.native.tsx and passed in. This component has zero hooks so it
   // can never trigger a worklet re-registration on re-render.
   zoomTransform: SharedValue<Transforms3d>;
+  zoomLevel: SharedValue<number>;
   imageWidth: SharedValue<number>;
   imageHeight: SharedValue<number>;
   // Live in-progress measurement line
@@ -75,6 +76,7 @@ const LIVE_PILL_PAD = 10;
 export function MeasureCanvas({
   image,
   zoomTransform,
+  zoomLevel,
   imageWidth,
   imageHeight,
   p1,
@@ -109,7 +111,7 @@ export function MeasureCanvas({
 
         {/* Committed measurement lines — image-space coords, track zoom/pan */}
         {committedLines.map((line) => (
-          <MeasurementLine key={line.id} line={line} font={font} />
+          <MeasurementLine key={line.id} line={line} font={font} zoomLevel={zoomLevel} />
         ))}
 
         {/* Calibration reference line — image-space coords, track zoom/pan */}

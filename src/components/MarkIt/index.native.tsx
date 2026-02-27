@@ -244,6 +244,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
         <MeasureCanvas
           image={image}
           zoomTransform={zoomTransform}
+          zoomLevel={zoomLevel}
           imageWidth={imageWidth}
           imageHeight={imageHeight}
           p1={p1}
