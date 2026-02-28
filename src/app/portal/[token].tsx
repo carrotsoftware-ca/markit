@@ -1,3 +1,5 @@
+import { ActivityFeed, MessageComposer } from "@/src/components/ui/activity";
+import { useActivity } from "@/src/hooks/useActivity";
 import { getAuth } from "@/src/services/firebase";
 import {
   getPortalEvents,
@@ -6,8 +8,6 @@ import {
   uploadPortalFile,
 } from "@/src/services/projects/getPortalProject";
 import { activatePortal, getPortalCustomToken } from "@/src/services/projects/sendPortalInvite";
-import { useActivity } from "@/src/hooks/useActivity";
-import { ActivityFeed, MessageComposer } from "@/src/components/ui/activity";
 import { MarkitEvent, Project, ProjectFile } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -352,11 +352,7 @@ export default function PortalPage() {
           <View style={styles.feedContainer}>
             <ActivityFeed events={events} currentUserId={clientId} />
           </View>
-          <MessageComposer
-            onSend={send}
-            isSending={isSending}
-            showInternalToggle={false}
-          />
+          <MessageComposer onSend={send} isSending={isSending} showInternalToggle={false} />
         </View>
       )}
 

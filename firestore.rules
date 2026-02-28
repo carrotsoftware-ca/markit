@@ -78,6 +78,19 @@ service cloud.firestore {
       }
 
       // -------------------------------------------------------------------------
+      // Quote subcollection — projects/{projectId}/quote/current
+      // -------------------------------------------------------------------------
+
+      match /quote/{docId} {
+        // Contractor: full read/write (save draft + send)
+        allow read, write: if isProjectOwner(projectId);
+
+        // Portal client: read the sent/accepted/rejected quote
+        allow read: if isValidPortalToken(projectId)
+                    && resource.data.status != "draft";
+      }
+
+      // -------------------------------------------------------------------------
       // Files subcollection
       // -------------------------------------------------------------------------
 

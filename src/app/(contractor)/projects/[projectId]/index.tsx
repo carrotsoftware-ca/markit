@@ -9,6 +9,7 @@ import {
   ProjectTabBar,
   UploadedFiles,
 } from "@/src/components/ui/projects";
+import { QuoteEditor } from "@/src/components/ui/quote/QuoteEditor";
 import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
@@ -16,11 +17,12 @@ import { useActivity } from "@/src/hooks/useActivity";
 import { takePhoto } from "@/src/hooks/useCamera";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
 import { pickMedia } from "@/src/hooks/useMediaPicker";
+import { useQuote } from "@/src/hooks/useQuote";
 import { deleteProjectFile, sendPortalInvite, uploadProjectFile } from "@/src/services/projects";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, Text, View } from "react-native";
+import { Alert, Pressable, ScrollView, View } from "react-native";
 
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
@@ -38,6 +40,23 @@ export default function ProjectDetailsScreen() {
     authorId: user?.id ?? "",
     authorName: user?.displayName ?? user?.email ?? "Contractor",
   });
+
+  const {
+    lineItems,
+    currency,
+    quote,
+    isSaving: isQuoteSaving,
+    isSending: isQuoteSending,
+    updateLineItem,
+    addLineItem,
+    removeLineItem,
+    send: sendQuote,
+  } = useQuote(
+    projectId as string,
+    files,
+    user?.id ?? "",
+    user?.displayName ?? user?.email ?? "Contractor",
+  );
 
   const handleInviteClient = async () => {
     if (!project?.client_email) {
@@ -175,23 +194,17 @@ export default function ProjectDetailsScreen() {
 
           {/* ── Quote ────────────────────────────────────────────────────── */}
           {activeTab === "quote" && (
-            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
-              <MaterialCommunityIcons
-                name="file-document-outline"
-                size={48}
-                color={theme.colors.text.secondary}
-              />
-              <Text
-                style={{
-                  color: theme.colors.text.secondary,
-                  fontFamily: theme.typography.fontFamily.regular,
-                  marginTop: 12,
-                  textAlign: "center",
-                }}
-              >
-                Quoting coming soon
-              </Text>
-            </View>
+            <QuoteEditor
+              lineItems={lineItems}
+              currency={currency}
+              status={quote?.status ?? "draft"}
+              isSaving={isQuoteSaving}
+              isSending={isQuoteSending}
+              onUpdateLineItem={updateLineItem}
+              onAddLineItem={addLineItem}
+              onRemoveLineItem={removeLineItem}
+              onSend={sendQuote}
+            />
           )}
 
           {/* ── Access ───────────────────────────────────────────────────── */}
