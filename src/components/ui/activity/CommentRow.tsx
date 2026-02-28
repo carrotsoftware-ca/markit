@@ -118,6 +118,13 @@ function getContent(event: ActivityEvent): {
         isSystem: true,
       };
     }
+
+    default:
+      return {
+        authorLabel: event.authorName ?? "System",
+        body: event.type,
+        isSystem: true,
+      };
   }
 }
 

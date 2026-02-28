@@ -1,22 +1,46 @@
 import { ActivityEvent } from "@/src/types";
 import React, { useEffect, useRef } from "react";
-import { FlatList, StyleSheet } from "react-native";
+import { FlatList, ScrollView, StyleSheet } from "react-native";
 import { CommentRow } from "./CommentRow";
 import { MessageBubble } from "./MessageBubble";
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
   currentUserId: string;
+  /** Use ScrollView instead of FlatList — required when nested inside another ScrollView (e.g. portal) */
+  useScrollView?: boolean;
 }
 
-export function ActivityFeed({ events, currentUserId }: ActivityFeedProps) {
+function renderEvent(item: ActivityEvent, currentUserId: string) {
+  return item.type === "message" ? (
+    <MessageBubble key={item.id} event={item as any} currentUserId={currentUserId} />
+  ) : (
+    <CommentRow key={item.id} event={item} currentUserId={currentUserId} />
+  );
+}
+
+export function ActivityFeed({ events, currentUserId, useScrollView = false }: ActivityFeedProps) {
   const flatListRef = useRef<FlatList>(null);
+  const scrollViewRef = useRef<ScrollView>(null);
 
   useEffect(() => {
     if (events.length > 0) {
       flatListRef.current?.scrollToEnd({ animated: true });
+      scrollViewRef.current?.scrollToEnd({ animated: true });
     }
   }, [events.length]);
+
+  if (useScrollView) {
+    return (
+      <ScrollView
+        ref={scrollViewRef}
+        contentContainerStyle={styles.content}
+        showsVerticalScrollIndicator={false}
+      >
+        {events.map((item) => renderEvent(item, currentUserId))}
+      </ScrollView>
+    );
+  }
 
   return (
     <FlatList
@@ -26,13 +50,7 @@ export function ActivityFeed({ events, currentUserId }: ActivityFeedProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-      renderItem={({ item }) =>
-        item.type === "message" ? (
-          <MessageBubble event={item as any} currentUserId={currentUserId} />
-        ) : (
-          <CommentRow event={item} currentUserId={currentUserId} />
-        )
-      }
+      renderItem={({ item }) => renderEvent(item, currentUserId)}
     />
   );
 }
