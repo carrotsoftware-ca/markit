@@ -14,6 +14,9 @@ export function watchProject(projectId: string, setProject: (project: any) => vo
           createdAt: data.createdAt?.toDate?.()?.toISOString?.() ?? data.createdAt ?? null,
           updatedAt: data.updatedAt?.toDate?.()?.toISOString?.() ?? data.updatedAt ?? null,
         });
+      } else {
+        // Doc was deleted — clear context so consumers don't crash on stale data
+        setProject(null);
       }
     });
 
