@@ -40,6 +40,7 @@ export default function PortalPage() {
   const [loading, setLoading] = useState(true);
   const [revoked, setRevoked] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
+  const [portalReady, setPortalReady] = useState(false); // true once auth + project load complete
   const [items, setItems] = useState<FileWithEvents[]>([]);
   const [clientId, setClientId] = useState("");
   const [clientName, setClientName] = useState("Client");
@@ -55,32 +56,32 @@ export default function PortalPage() {
 
   // Hooks
   const { uploads, handleUpload } = usePortalUpload(
-    project?.id ?? "",
+    portalReady ? (project?.id ?? "") : "",
     setItems,
     clientId,
     clientName,
   );
   const { respond, requestRevision, isResponding } = usePortalQuote(
-    project?.id ?? "",
+    portalReady ? (project?.id ?? "") : "",
     quote,
     clientId,
     clientName,
   );
   const { events, send, isSending } = useActivity({
-    projectId: project?.id ?? "",
+    projectId: portalReady ? (project?.id ?? "") : "",
     visibility: "all",
     authorId: clientId,
     authorName: clientName,
   });
 
   useEffect(() => {
-    if (!project?.id) return;
+    if (!portalReady || !project?.id) return;
     return watchQuote(project.id, setQuote);
-  }, [project?.id]);
+  }, [portalReady, project?.id]);
 
   // Real-time file watcher — fires on upload, update and delete
   useEffect(() => {
-    if (!project?.id) return;
+    if (!portalReady || !project?.id) return;
     return watchPortalFiles(project.id, async (files) => {
       const doneFiles = files.filter((f) => f.status === "done");
       const withEvents = await Promise.all(
@@ -91,7 +92,7 @@ export default function PortalPage() {
       );
       setItems(withEvents);
     });
-  }, [project?.id]);
+  }, [portalReady, project?.id]);
 
   useEffect(() => {
     if (!token) return;
@@ -115,6 +116,9 @@ export default function PortalPage() {
         const platform =
           Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "web";
         activatePortal(token, platform).catch(() => {});
+
+        // All auth + data is ready — start Firestore listeners now
+        setPortalReady(true);
       } catch {
         setRevoked(true);
       } finally {

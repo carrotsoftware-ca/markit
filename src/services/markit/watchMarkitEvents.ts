@@ -23,14 +23,19 @@ export function watchMarkitEvents(
     .doc(fileId)
     .collection("events")
     .orderBy("createdAt", "asc")
-    .onSnapshot((snapshot) => {
-      if (!snapshot) return;
-      const events = snapshot.docs.map((doc) => ({
-        ...(doc.data() as MarkitEvent),
-        id: doc.id,
-      }));
-      setEvents(events);
-    });
+    .onSnapshot(
+      (snapshot) => {
+        if (!snapshot) return;
+        const events = snapshot.docs.map((doc) => ({
+          ...(doc.data() as MarkitEvent),
+          id: doc.id,
+        }));
+        setEvents(events);
+      },
+      (error) => {
+        console.warn("watchMarkitEvents error:", error.code, error.message);
+      },
+    );
 
   return unsubscribe;
 }

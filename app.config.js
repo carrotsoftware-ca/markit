@@ -93,7 +93,7 @@ export default ({ config }) => ({
       ],
     },
     web: {
-      output: "static",
+      output: "single-page",
       favicon: "./assets/icons/favicon.png",
     },
     plugins: [

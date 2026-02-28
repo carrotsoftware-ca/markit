@@ -97,8 +97,7 @@ service cloud.firestore {
         allow read, write: if isProjectOwner(projectId);
 
         // Portal client: read the sent/accepted/rejected quote
-        allow read: if isValidPortalToken(projectId)
-                    && resource.data.status != "draft";
+        allow read: if isValidPortalToken(projectId);
 
         // Portal client: respond to a quote (accept / reject / request revisions)
         // Only the status and respondedAt fields may change.
