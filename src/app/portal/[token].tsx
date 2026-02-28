@@ -6,6 +6,8 @@ import {
   uploadPortalFile,
 } from "@/src/services/projects/getPortalProject";
 import { activatePortal, getPortalCustomToken } from "@/src/services/projects/sendPortalInvite";
+import { useActivity } from "@/src/hooks/useActivity";
+import { ActivityFeed, MessageComposer } from "@/src/components/ui/activity";
 import { MarkitEvent, Project, ProjectFile } from "@/src/types";
 import * as ImagePicker from "expo-image-picker";
 import { useLocalSearchParams, useRouter } from "expo-router";
@@ -103,6 +105,15 @@ export default function PortalPage() {
   const [project, setProject] = useState<Project | null>(null);
   const [items, setItems] = useState<FileWithEvents[]>([]);
   const [uploads, setUploads] = useState<UploadState[]>([]);
+  const [clientId, setClientId] = useState("");
+  const [clientName, setClientName] = useState("Client");
+
+  const { events, send, isSending } = useActivity({
+    projectId: project?.id ?? "",
+    visibility: "all",
+    authorId: clientId,
+    authorName: clientName,
+  });
 
   useEffect(() => {
     if (!token) return;
@@ -117,12 +128,26 @@ export default function PortalPage() {
         const customToken = await getPortalCustomToken(token);
         await getAuth().signInWithCustomToken(customToken);
 
+        // Capture the portal user's UID for the activity feed.
+        // The custom token gives us a stable anonymous UID — no display name
+        // is set on the Firebase user, so we derive the name from the project
+        // client_email once the project is loaded below.
+        const currentUser = getAuth().currentUser;
+        if (currentUser) {
+          setClientId(currentUser.uid);
+        }
+
         const proj = await getProjectByToken(token);
         if (!proj) {
           setRevoked(true);
           return;
         }
         setProject(proj);
+
+        // Use the client email as the display name in the activity feed
+        if (proj.client_email) {
+          setClientName(proj.client_email);
+        }
 
         // Record this session (uid + email + platform) and transition draft → active.
         const platform =
@@ -320,6 +345,21 @@ export default function PortalPage() {
         <Text style={styles.uploadButtonLabel}>Upload Photos</Text>
       </Pressable>
 
+      {/* Activity feed — client ↔ contractor chat */}
+      {project && (
+        <View style={styles.feedSection}>
+          <Text style={styles.feedHeading}>Messages</Text>
+          <View style={styles.feedContainer}>
+            <ActivityFeed events={events} currentUserId={clientId} />
+          </View>
+          <MessageComposer
+            onSend={send}
+            isSending={isSending}
+            showInternalToggle={false}
+          />
+        </View>
+      )}
+
       <Text style={styles.footer}>Powered by markit!</Text>
     </ScrollView>
   );
@@ -442,4 +482,22 @@ const styles = StyleSheet.create({
     overflow: "hidden",
   },
   progressFill: { height: 4, backgroundColor: ORANGE, borderRadius: 2 },
+
+  // Activity feed
+  feedSection: { marginHorizontal: 24, marginTop: 24 },
+  feedHeading: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase",
+    marginBottom: 8,
+  },
+  feedContainer: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    minHeight: 200,
+    maxHeight: 400,
+    overflow: "hidden",
+  },
 });
