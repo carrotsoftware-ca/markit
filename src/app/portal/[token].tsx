@@ -1,19 +1,24 @@
+import { ActivityFeed, MessageComposer } from "@/src/components/ui/activity";
+import { FileWithEvents } from "@/src/components/ui/portal/PortalFileRow";
+import { PortalFiles } from "@/src/components/ui/portal/PortalFiles";
+import { PortalQuoteCard } from "@/src/components/ui/portal/PortalQuoteCard";
+import { useActivity } from "@/src/hooks/useActivity";
+import { usePortalQuote } from "@/src/hooks/usePortalQuote";
+import { usePortalUpload } from "@/src/hooks/usePortalUpload";
 import { getAuth } from "@/src/services/firebase";
+import { deletePortalFile } from "@/src/services/projects/deletePortalFile";
 import {
   getPortalEvents,
-  getPortalFiles,
   getProjectByToken,
-  uploadPortalFile,
+  watchPortalFiles,
 } from "@/src/services/projects/getPortalProject";
 import { activatePortal, getPortalCustomToken } from "@/src/services/projects/sendPortalInvite";
-import { MarkitEvent, Project, ProjectFile } from "@/src/types";
-import * as ImagePicker from "expo-image-picker";
+import { watchQuote } from "@/src/services/projects/watchQuote";
+import { Project, Quote } from "@/src/types";
 import { useLocalSearchParams, useRouter } from "expo-router";
-import React, { useEffect, useLayoutEffect, useState } from "react";
+import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
   ActivityIndicator,
-  Alert,
-  Image,
   Platform,
   Pressable,
   ScrollView,
@@ -22,77 +27,11 @@ import {
   View,
 } from "react-native";
 
-// ---------------------------------------------------------------------------
-// Helpers
-// ---------------------------------------------------------------------------
-
-function getActiveEvents(events: MarkitEvent[]): MarkitEvent[] {
-  const deleted = new Set(
-    events.filter((e) => e.type === "delete").map((e) => (e as any).targetEventId as string),
-  );
-  return events.filter((e) => e.type !== "delete" && !deleted.has(e.id));
-}
-
-// ---------------------------------------------------------------------------
-// File list row
-// ---------------------------------------------------------------------------
-
-interface FileRowProps {
-  file: ProjectFile;
-  measurementCount: number;
-  onPress: () => void;
-}
-
-function FileRow({ file, measurementCount, onPress }: FileRowProps) {
-  const displayName = file.name || file.filename;
-  const dateStr = file.date
-    ? new Date(file.date).toLocaleDateString(undefined, {
-        month: "short",
-        day: "numeric",
-        year: "numeric",
-      })
-    : "";
-
-  return (
-    <Pressable
-      onPress={onPress}
-      style={({ pressed }) => [styles.fileRow, pressed && styles.fileRowPressed]}
-    >
-      {/* Thumbnail */}
-      <View style={styles.thumb}>
-        {file.url ? (
-          <Image source={{ uri: file.url }} style={styles.thumbImage} resizeMode="cover" />
-        ) : (
-          <Text style={styles.thumbPlaceholder}>📄</Text>
-        )}
-      </View>
-
-      {/* Info */}
-      <View style={styles.fileRowInfo}>
-        <Text style={styles.fileRowName} numberOfLines={1}>
-          {displayName}
-        </Text>
-        <Text style={styles.fileRowMeta}>
-          {dateStr}
-          {measurementCount > 0
-            ? `  ·  ${measurementCount} measurement${measurementCount !== 1 ? "s" : ""}`
-            : ""}
-        </Text>
-      </View>
-
-      {/* Chevron */}
-      <Text style={styles.chevron}>›</Text>
-    </Pressable>
-  );
-}
-
-// ---------------------------------------------------------------------------
-// Portal page
-// ---------------------------------------------------------------------------
-
-type FileWithEvents = { file: ProjectFile; events: MarkitEvent[] };
-
-type UploadState = { filename: string; progress: number; done: boolean };
+const BG = "#1a1a1a";
+const CARD = "#242424";
+const ORANGE = "#FF6B00";
+const TEXT = "#ffffff";
+const MUTED = "#888888";
 
 export default function PortalPage() {
   const { token } = useLocalSearchParams<{ token: string }>();
@@ -102,20 +41,68 @@ export default function PortalPage() {
   const [revoked, setRevoked] = useState(false);
   const [project, setProject] = useState<Project | null>(null);
   const [items, setItems] = useState<FileWithEvents[]>([]);
-  const [uploads, setUploads] = useState<UploadState[]>([]);
+  const [clientId, setClientId] = useState("");
+  const [clientName, setClientName] = useState("Client");
+  const [quote, setQuote] = useState<Quote | null>(null);
+  const [activeSection, setActiveSection] = useState<"quote" | "files" | "chat" | null>(null);
+
+  // Scroll to top when switching sections
+  const scrollViewRef = useRef<ScrollView>(null);
+  const openSection = (key: "quote" | "files" | "chat") => {
+    setActiveSection(key);
+    setTimeout(() => scrollViewRef.current?.scrollTo({ y: 0, animated: false }), 0);
+  };
+
+  // Hooks
+  const { uploads, handleUpload } = usePortalUpload(
+    project?.id ?? "",
+    setItems,
+    clientId,
+    clientName,
+  );
+  const { respond, requestRevision, isResponding } = usePortalQuote(
+    project?.id ?? "",
+    quote,
+    clientId,
+    clientName,
+  );
+  const { events, send, isSending } = useActivity({
+    projectId: project?.id ?? "",
+    visibility: "all",
+    authorId: clientId,
+    authorName: clientName,
+  });
+
+  useEffect(() => {
+    if (!project?.id) return;
+    return watchQuote(project.id, setQuote);
+  }, [project?.id]);
+
+  // Real-time file watcher — fires on upload, update and delete
+  useEffect(() => {
+    if (!project?.id) return;
+    return watchPortalFiles(project.id, async (files) => {
+      const doneFiles = files.filter((f) => f.status === "done");
+      const withEvents = await Promise.all(
+        doneFiles.map(async (file) => ({
+          file,
+          events: await getPortalEvents(project.id, file.id),
+        })),
+      );
+      setItems(withEvents);
+    });
+  }, [project?.id]);
 
   useEffect(() => {
     if (!token) return;
-
     (async () => {
       setLoading(true);
       try {
-        // Exchange the portal token for a Firebase custom token and sign in.
-        // The backend derives a stable UID from the client's email address, so
-        // the same Firebase account is restored on every device — no separate
-        // sign-in step needed. The portal link itself IS the credential.
         const customToken = await getPortalCustomToken(token);
         await getAuth().signInWithCustomToken(customToken);
+
+        const currentUser = getAuth().currentUser;
+        if (currentUser) setClientId(currentUser.uid);
 
         const proj = await getProjectByToken(token);
         if (!proj) {
@@ -123,22 +110,11 @@ export default function PortalPage() {
           return;
         }
         setProject(proj);
+        if (proj.client_email) setClientName(proj.client_email);
 
-        // Record this session (uid + email + platform) and transition draft → active.
         const platform =
           Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "web";
         activatePortal(token, platform).catch(() => {});
-
-        const files = await getPortalFiles(proj.id);
-        const doneFiles = files.filter((f) => f.status === "done");
-
-        const withEvents = await Promise.all(
-          doneFiles.map(async (file) => {
-            const events = await getPortalEvents(proj.id, file.id);
-            return { file, events };
-          }),
-        );
-        setItems(withEvents);
       } catch {
         setRevoked(true);
       } finally {
@@ -147,7 +123,6 @@ export default function PortalPage() {
     })();
   }, [token]);
 
-  // Set document title on web
   useLayoutEffect(() => {
     if (typeof document !== "undefined" && project?.name) {
       document.title = `${project.name} — markit!`;
@@ -157,7 +132,7 @@ export default function PortalPage() {
   if (loading) {
     return (
       <View style={styles.centred}>
-        <ActivityIndicator size="large" color="#FF6B00" />
+        <ActivityIndicator size="large" color={ORANGE} />
       </View>
     );
   }
@@ -178,167 +153,162 @@ export default function PortalPage() {
     if (!item.file.url) return;
     router.push({
       pathname: "/portal/measure",
-      params: {
-        fileUrl: item.file.url,
-        projectId: project.id,
-        fileId: item.file.id,
-      },
+      params: { fileUrl: item.file.url, projectId: project.id, fileId: item.file.id },
     });
   };
 
-  const handleUpload = async () => {
-    if (!project) return;
-
-    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
-    if (status !== "granted") {
-      Alert.alert(
-        "Permission needed",
-        "Please allow access to your photo library to upload files.",
-      );
-      return;
-    }
-
-    const result = await ImagePicker.launchImageLibraryAsync({
-      mediaTypes: ["images"],
-      allowsMultipleSelection: true,
-      quality: 0.9,
-    });
-
-    if (result.canceled || result.assets.length === 0) return;
-
-    for (const asset of result.assets) {
-      const filename = asset.fileName ?? asset.uri.split("/").pop() ?? `photo_${Date.now()}.jpg`;
-      const uploadKey = filename;
-
-      setUploads((prev) => [...prev, { filename, progress: 0, done: false }]);
-
-      try {
-        await uploadPortalFile(
-          project.id,
-          asset.uri,
-          filename,
-          asset.mimeType ?? "image/jpeg",
-          asset.fileSize,
-          (pct) => {
-            setUploads((prev) =>
-              prev.map((u) => (u.filename === uploadKey ? { ...u, progress: pct } : u)),
-            );
-          },
-        );
-
-        setUploads((prev) =>
-          prev.map((u) => (u.filename === uploadKey ? { ...u, progress: 100, done: true } : u)),
-        );
-
-        // Refresh the file list after a brief pause so the new file appears
-        setTimeout(async () => {
-          if (!project) return;
-          const files = await getPortalFiles(project.id);
-          const doneFiles = files.filter((f) => f.status === "done");
-          const withEvents = await Promise.all(
-            doneFiles.map(async (file) => {
-              const events = await getPortalEvents(project.id, file.id);
-              return { file, events };
-            }),
-          );
-          setItems(withEvents);
-          setUploads((prev) => prev.filter((u) => u.filename !== uploadKey));
-        }, 1500);
-      } catch (err) {
-        console.error("Portal upload error:", err);
-        setUploads((prev) => prev.filter((u) => u.filename !== uploadKey));
-        Alert.alert("Upload failed", "Something went wrong uploading that file. Please try again.");
-      }
-    }
+  const handleFileDelete = async (item: FileWithEvents) => {
+    if (!project?.id) return;
+    await deletePortalFile(project.id, item.file, clientId, clientName);
+    // No manual state update — watchPortalFiles snapshot fires automatically
   };
 
-  // File list view
+  const showQuote = !!quote && quote.status !== "draft";
+
+  // Default to "files" on first load if no quote yet
+  const effectiveSection = activeSection ?? (showQuote ? null : "files");
+
   return (
-    <ScrollView style={styles.page} contentContainerStyle={styles.pageContent}>
-      {/* Header */}
+    <ScrollView ref={scrollViewRef} style={styles.page} contentContainerStyle={styles.content}>
+      {/* ── Header ── */}
       <View style={styles.header}>
         <Text style={styles.logo}>
           markit<Text style={styles.logoAccent}>!</Text>
         </Text>
       </View>
 
-      {/* Project info */}
-      <View style={styles.projectMeta}>
+      {/* ── Project meta ── */}
+      <View style={styles.section}>
         <Text style={styles.projectName}>{project.name}</Text>
         {project.description ? <Text style={styles.projectDesc}>{project.description}</Text> : null}
-        <View style={[styles.statusBadge, styles[`status_${project.status ?? "draft"}`]]}>
+        <View style={[styles.statusPill, styles[`status_${project.status ?? "draft"}`]]}>
           <Text style={styles.statusText}>{project.status ?? "draft"}</Text>
         </View>
       </View>
 
+      {/* ── Tile grid ── */}
+      <View style={styles.tileGrid}>
+        {showQuote && (
+          <Tile
+            icon="📋"
+            label="Quote"
+            badge={quote!.status}
+            badgeColor={
+              quote!.status === "accepted"
+                ? "#2ecc71"
+                : quote!.status === "rejected"
+                  ? "#e74c3c"
+                  : ORANGE
+            }
+            active={effectiveSection === "quote"}
+            onPress={() => openSection("quote")}
+          />
+        )}
+        <Tile
+          icon="📁"
+          label="Files"
+          badge={items.length > 0 ? String(items.length) : null}
+          active={effectiveSection === "files"}
+          onPress={() => openSection("files")}
+        />
+        <Tile
+          icon="💬"
+          label="Chat"
+          badge={(() => {
+            const n = events.filter((e) => e.type === "message").length;
+            return n > 0 ? String(n) : null;
+          })()}
+          active={effectiveSection === "chat"}
+          onPress={() => openSection("chat")}
+        />
+      </View>
+
       <View style={styles.divider} />
 
-      {/* File list */}
-      {items.length === 0 && uploads.length === 0 ? (
-        <Text style={styles.emptyText}>No files have been added to this project yet.</Text>
-      ) : (
-        <View style={styles.fileList}>
-          {items.map((item) => {
-            const active = getActiveEvents(item.events);
-            const measurementCount = active.filter((e) => e.type === "measurement").length;
-            return (
-              <FileRow
-                key={item.file.id}
-                file={item.file}
-                measurementCount={measurementCount}
-                onPress={() => handleFilePress(item)}
-              />
-            );
-          })}
-
-          {/* In-progress uploads */}
-          {uploads.map((u) => (
-            <View key={u.filename} style={styles.uploadRow}>
-              <View style={styles.thumb}>
-                <ActivityIndicator size="small" color={ORANGE} />
-              </View>
-              <View style={styles.fileRowInfo}>
-                <Text style={styles.fileRowName} numberOfLines={1}>
-                  {u.filename}
-                </Text>
-                <View style={styles.progressTrack}>
-                  <View style={[styles.progressFill, { width: `${u.progress}%` as any }]} />
-                </View>
-                <Text style={styles.fileRowMeta}>{u.done ? "Processing…" : `${u.progress}%`}</Text>
-              </View>
-            </View>
-          ))}
+      {/* ── Quote ── */}
+      {effectiveSection === "quote" && showQuote && (
+        <View style={styles.section}>
+          <PortalQuoteCard
+            quote={quote!}
+            isResponding={isResponding}
+            onRespond={respond}
+            onRequestRevision={requestRevision}
+          />
         </View>
       )}
 
-      {/* Upload button */}
-      <Pressable
-        onPress={handleUpload}
-        style={({ pressed }) => [styles.uploadButton, pressed && styles.uploadButtonPressed]}
-      >
-        <Text style={styles.uploadButtonIcon}>＋</Text>
-        <Text style={styles.uploadButtonLabel}>Upload Photos</Text>
-      </Pressable>
+      {/* ── Files ── */}
+      {effectiveSection === "files" && (
+        <View style={styles.section}>
+          <PortalFiles
+            items={items}
+            uploads={uploads}
+            onFilePress={handleFilePress}
+            onFileDelete={handleFileDelete}
+            onUpload={handleUpload}
+          />
+        </View>
+      )}
+
+      {/* ── Chat ── */}
+      {effectiveSection === "chat" && (
+        <View style={styles.section}>
+          <View style={styles.feedContainer}>
+            <ActivityFeed events={events} currentUserId={clientId} />
+          </View>
+          <MessageComposer onSend={send} isSending={isSending} />
+        </View>
+      )}
 
       <Text style={styles.footer}>Powered by markit!</Text>
     </ScrollView>
   );
 }
 
-// ---------------------------------------------------------------------------
-// Styles
-// ---------------------------------------------------------------------------
+// ── Tile sub-component ──────────────────────────────────────────────────────
 
-const BG = "#1a1a1a";
-const CARD = "#242424";
-const ORANGE = "#FF6B00";
-const TEXT = "#ffffff";
-const MUTED = "#888888";
+function Tile({
+  icon,
+  label,
+  badge,
+  badgeColor = ORANGE,
+  active = false,
+  onPress,
+}: {
+  icon: string;
+  label: string;
+  badge?: string | null;
+  badgeColor?: string;
+  active?: boolean;
+  onPress: () => void;
+}) {
+  return (
+    <Pressable
+      style={({ pressed }) => [
+        styles.tile,
+        active && styles.tileActive,
+        pressed && { opacity: 0.75 },
+      ]}
+      onPress={onPress}
+    >
+      <View style={styles.tileIconWrap}>
+        <Text style={styles.tileIcon}>{icon}</Text>
+      </View>
+      <Text style={styles.tileLabel}>{label}</Text>
+      {badge && (
+        <View style={[styles.tileBadge, { backgroundColor: badgeColor }]}>
+          <Text style={styles.tileBadgeText}>{badge}</Text>
+        </View>
+      )}
+    </Pressable>
+  );
+}
+
+// ── Styles ──────────────────────────────────────────────────────────────────
 
 const styles = StyleSheet.create({
   page: { flex: 1, backgroundColor: BG },
-  pageContent: { maxWidth: 680, alignSelf: "center", width: "100%" as any, paddingBottom: 64 },
-
+  content: { maxWidth: 680, alignSelf: "center", width: "100%" as any, paddingBottom: 64 },
   centred: {
     flex: 1,
     backgroundColor: BG,
@@ -347,14 +317,23 @@ const styles = StyleSheet.create({
     padding: 32,
   },
 
-  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 16 },
+  header: { paddingHorizontal: 24, paddingTop: 32, paddingBottom: 8 },
   logo: { fontSize: 28, fontWeight: "900", color: TEXT, letterSpacing: -1 },
   logoAccent: { color: ORANGE },
 
-  projectMeta: { paddingHorizontal: 24, paddingBottom: 16 },
+  section: { paddingHorizontal: 24, paddingTop: 16 },
+  sectionLabel: {
+    color: MUTED,
+    fontSize: 11,
+    fontWeight: "700",
+    letterSpacing: 1,
+    textTransform: "uppercase" as const,
+    marginBottom: 10,
+  },
+
   projectName: { fontSize: 26, fontWeight: "bold", color: TEXT, marginBottom: 6 },
   projectDesc: { fontSize: 15, color: MUTED, marginBottom: 12 },
-  statusBadge: {
+  statusPill: {
     alignSelf: "flex-start",
     paddingHorizontal: 10,
     paddingVertical: 4,
@@ -363,83 +342,72 @@ const styles = StyleSheet.create({
   status_active: { backgroundColor: "rgba(34,197,94,0.15)" },
   status_draft: { backgroundColor: "rgba(234,179,8,0.15)" },
   status_completed: { backgroundColor: "rgba(100,100,100,0.2)" },
-  statusText: { fontSize: 12, fontWeight: "600", color: MUTED, textTransform: "uppercase" as any },
-
-  divider: { height: 1, backgroundColor: "#333", marginHorizontal: 24, marginVertical: 8 },
-
-  // File list
-  fileList: {
-    marginHorizontal: 24,
-    marginTop: 8,
-    backgroundColor: CARD,
-    borderRadius: 12,
-    overflow: "hidden",
+  statusText: {
+    fontSize: 12,
+    fontWeight: "600",
+    color: MUTED,
+    textTransform: "uppercase" as const,
   },
-  fileRow: {
+
+  divider: { height: 1, backgroundColor: "#333", marginHorizontal: 24, marginTop: 16 },
+
+  tileGrid: {
     flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2e2e2e",
+    flexWrap: "wrap",
+    paddingHorizontal: 20,
+    paddingTop: 16,
+    gap: 12,
   },
-  fileRowPressed: { backgroundColor: "#2e2e2e" },
-  thumb: {
-    width: 52,
-    height: 52,
-    borderRadius: 8,
-    backgroundColor: "#111",
-    overflow: "hidden",
+  tile: {
+    width: 100,
+    aspectRatio: 1,
+    backgroundColor: CARD,
+    borderRadius: 16,
     alignItems: "center",
     justifyContent: "center",
-    marginRight: 14,
-    flexShrink: 0,
+    padding: 8,
+    position: "relative",
+    borderWidth: 2,
+    borderColor: "transparent",
   },
-  thumbImage: { width: 52, height: 52 },
-  thumbPlaceholder: { fontSize: 24 },
-  fileRowInfo: { flex: 1, marginRight: 8 },
-  fileRowName: { color: TEXT, fontWeight: "600", fontSize: 15, marginBottom: 4 },
-  fileRowMeta: { color: MUTED, fontSize: 13 },
-  chevron: { color: MUTED, fontSize: 24, lineHeight: 28 },
+  tileActive: {
+    borderColor: ORANGE,
+    backgroundColor: "rgba(255,107,0,0.08)",
+  },
+  tileIconWrap: {
+    width: 52,
+    height: 52,
+    borderRadius: 26,
+    backgroundColor: "rgba(255,107,0,0.12)",
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: 6,
+  },
+  tileIcon: { fontSize: 24 },
+  tileLabel: { color: TEXT, fontSize: 12, fontWeight: "600", textAlign: "center" },
+  tileBadge: {
+    position: "absolute",
+    top: 6,
+    right: 6,
+    minWidth: 18,
+    height: 18,
+    borderRadius: 9,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 4,
+  },
+  tileBadgeText: { color: "#fff", fontSize: 10, fontWeight: "700" },
 
-  emptyText: { color: MUTED, textAlign: "center", marginTop: 48, fontSize: 15 },
-  footer: { color: "#444", textAlign: "center", fontSize: 12, marginTop: 48 },
+  feedContainer: {
+    backgroundColor: CARD,
+    borderRadius: 12,
+    minHeight: 200,
+    maxHeight: 400,
+    overflow: "hidden",
+  },
 
   revokedIcon: { fontSize: 48, marginBottom: 16 },
   revokedTitle: { fontSize: 22, fontWeight: "bold", color: TEXT, marginBottom: 8 },
   revokedSub: { fontSize: 15, color: MUTED, textAlign: "center", maxWidth: 320 },
-
-  // Upload button
-  uploadButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    marginHorizontal: 24,
-    marginTop: 16,
-    paddingVertical: 14,
-    borderRadius: 12,
-    backgroundColor: ORANGE,
-  },
-  uploadButtonPressed: { opacity: 0.8 },
-  uploadButtonIcon: { color: "#fff", fontSize: 20, fontWeight: "bold", marginRight: 8 },
-  uploadButtonLabel: { color: "#fff", fontWeight: "700", fontSize: 16 },
-
-  // In-progress upload row
-  uploadRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    paddingVertical: 12,
-    paddingHorizontal: 14,
-    borderBottomWidth: 1,
-    borderBottomColor: "#2e2e2e",
-  },
-  progressTrack: {
-    height: 4,
-    backgroundColor: "#333",
-    borderRadius: 2,
-    marginTop: 6,
-    marginBottom: 4,
-    overflow: "hidden",
-  },
-  progressFill: { height: 4, backgroundColor: ORANGE, borderRadius: 2 },
+  footer: { color: "#444", textAlign: "center", fontSize: 12, marginTop: 48, paddingBottom: 16 },
 });

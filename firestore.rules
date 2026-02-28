@@ -51,12 +51,61 @@ service cloud.firestore {
                   && resource.data.portalToken != null;
 
       // -------------------------------------------------------------------------
+      // Activity feed — chat messages + system events
+      // -------------------------------------------------------------------------
+      match /activity/{eventId} {
+        // Contractor: full read + append
+        allow read, create: if isProjectOwner(projectId);
+        // No one edits or hard-deletes activity events (append-only)
+        allow update, delete: if false;
+
+        // Portal client: read public events + send messages
+        allow read: if isValidPortalToken(projectId)
+                    && resource.data.visibleTo == "all";
+        allow create: if isValidPortalToken(projectId)
+                      && request.resource.data.visibleTo == "all"
+                      && (
+                        // Chat messages
+                        (request.resource.data.type == "message"
+                          && request.resource.data.keys().hasAll(["type", "actor", "authorId", "authorName", "visibleTo", "text", "createdAt"]))
+                        ||
+                        // File upload / delete system events
+                        (request.resource.data.type in ["file_uploaded", "file_deleted"]
+                          && request.resource.data.keys().hasAll(["type", "actor", "authorId", "authorName", "visibleTo", "payload", "createdAt"]))
+                        ||
+                        // Quote response events (accepted / rejected / revision requested)
+                        (request.resource.data.type in ["quote_accepted", "quote_rejected", "quote_revision_requested"]
+                          && request.resource.data.keys().hasAll(["type", "actor", "authorId", "authorName", "visibleTo", "payload", "createdAt"]))
+                      );
+      }
+
+      // -------------------------------------------------------------------------
       // Portal sessions — written by the Cloud Function (admin SDK bypasses rules)
       // but readable by the project owner to show who has viewed the portal.
       // -------------------------------------------------------------------------
       match /portalSessions/{sessionId} {
         allow read: if isProjectOwner(projectId);
         allow write: if false; // Cloud Function only (admin SDK)
+      }
+
+      // -------------------------------------------------------------------------
+      // Quote subcollection — projects/{projectId}/quote/current
+      // -------------------------------------------------------------------------
+
+      match /quote/{docId} {
+        // Contractor: full read/write (save draft + send)
+        allow read, write: if isProjectOwner(projectId);
+
+        // Portal client: read the sent/accepted/rejected quote
+        allow read: if isValidPortalToken(projectId)
+                    && resource.data.status != "draft";
+
+        // Portal client: respond to a quote (accept / reject / request revisions)
+        // Only the status and respondedAt fields may change.
+        allow update: if isValidPortalToken(projectId)
+                      && resource.data.status == "sent"
+                      && request.resource.data.status in ["accepted", "rejected", "revision_requested"]
+                      && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "respondedAt"]);
       }
 
       // -------------------------------------------------------------------------
@@ -81,6 +130,9 @@ service cloud.firestore {
         // Prevents clients from modifying filenames, storagePaths, etc.
         allow update: if isValidPortalToken(projectId)
                       && request.resource.data.diff(resource.data).affectedKeys().hasOnly(["status", "url", "progress"]);
+
+        // Portal: delete their own file docs (e.g. client removes an uploaded file)
+        allow delete: if isValidPortalToken(projectId);
 
         // -----------------------------------------------------------------------
         // Events subcollection — append-only, no updates or hard deletes.
