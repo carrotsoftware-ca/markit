@@ -2,7 +2,7 @@
 // Quote types
 // ---------------------------------------------------------------------------
 
-export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected";
+export type QuoteStatus = "draft" | "sent" | "accepted" | "rejected" | "revision_requested";
 
 export interface QuoteLineItem {
   id: string;

@@ -37,6 +37,7 @@ export function QuoteEditor({
 }: QuoteEditorProps) {
   const { theme } = useTheme();
   const totalCents = calcQuoteTotal(lineItems);
+  const isRevisionRequested = status === "revision_requested";
   const isSent = status === "sent" || status === "accepted" || status === "rejected";
 
   return (
@@ -59,8 +60,30 @@ export function QuoteEditor({
               </Text>
             </View>
           )}
+          {isRevisionRequested && (
+            <View style={[styles.statusBadge, { backgroundColor: "rgba(243,156,18,0.15)" }]}>
+              <Text style={[styles.statusBadgeText, { color: "#f39c12" }]}>
+                REVISIONS REQUESTED
+              </Text>
+            </View>
+          )}
         </View>
       </View>
+
+      {/* Revision banner */}
+      {isRevisionRequested && (
+        <View
+          style={[
+            styles.revisionBanner,
+            { backgroundColor: "rgba(243,156,18,0.1)", borderColor: "#f39c12" },
+          ]}
+        >
+          <MaterialCommunityIcons name="pencil-circle-outline" size={18} color="#f39c12" />
+          <Text style={[styles.revisionBannerText, { color: "#f39c12" }]}>
+            The client has requested revisions. Update the quote below and re-send.
+          </Text>
+        </View>
+      )}
 
       {/* Column headers */}
       <View style={styles.colHeaders}>
@@ -145,7 +168,7 @@ export function QuoteEditor({
           style={({ pressed }) => [
             styles.sendButton,
             {
-              backgroundColor: theme.colors.safetyOrange,
+              backgroundColor: isRevisionRequested ? "#f39c12" : theme.colors.safetyOrange,
               opacity: pressed || isSending || lineItems.length === 0 ? 0.5 : 1,
             },
           ]}
@@ -155,12 +178,14 @@ export function QuoteEditor({
           ) : (
             <>
               <MaterialCommunityIcons
-                name="send"
+                name={isRevisionRequested ? "send-check" : "send"}
                 size={18}
                 color="#fff"
                 style={{ marginRight: 8 }}
               />
-              <Text style={styles.sendButtonText}>Send Quote to Client</Text>
+              <Text style={styles.sendButtonText}>
+                {isRevisionRequested ? "Re-send Revised Quote" : "Send Quote to Client"}
+              </Text>
             </>
           )}
         </Pressable>
@@ -300,6 +325,23 @@ const styles = StyleSheet.create({
   headerRight: { flexDirection: "row", alignItems: "center", gap: 8 },
   savingText: { fontSize: 12 },
   statusBadge: { paddingHorizontal: 8, paddingVertical: 3, borderRadius: 6 },
+  statusBadgeText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
+  revisionBanner: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 8,
+    borderWidth: 1,
+    borderRadius: 10,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    marginBottom: 12,
+  },
+  revisionBannerText: {
+    flex: 1,
+    fontSize: 13,
+    fontWeight: "500",
+    lineHeight: 18,
+  },
   statusBadgeText: { fontSize: 11, fontWeight: "700", letterSpacing: 0.5 },
 
   colHeaders: { flexDirection: "row", alignItems: "center", marginBottom: 8, paddingHorizontal: 4 },

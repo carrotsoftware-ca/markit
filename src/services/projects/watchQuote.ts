@@ -1,10 +1,10 @@
 import { getFirestore } from "@/src/services/firebase";
 import { Quote } from "@/src/types";
-import { DocumentSnapshot, collection, doc, onSnapshot } from "firebase/firestore";
 
-function docToQuote(snap: DocumentSnapshot): Quote | null {
-  if (!snap.exists()) return null;
-  const data = snap.data()!;
+function docToQuote(snap: any): Quote | null {
+  if (!snap.exists) return null;
+  const data = snap.data();
+  if (!data) return null;
   return {
     id: snap.id,
     status: data.status ?? "draft",
@@ -20,12 +20,15 @@ function docToQuote(snap: DocumentSnapshot): Quote | null {
 }
 
 /**
- * Subscribes to projects/{projectId}/quote (a single doc).
+ * Subscribes to projects/{projectId}/quote/current (a single doc).
  * Calls onQuote(null) if the doc doesn't exist yet.
  */
 export function watchQuote(projectId: string, onQuote: (quote: Quote | null) => void): () => void {
   if (!projectId) return () => {};
-  const db = getFirestore();
-  const ref = doc(collection(db, "projects", projectId, "quote"), "current");
-  return onSnapshot(ref, (snap) => onQuote(docToQuote(snap)));
+  return getFirestore()
+    .collection("projects")
+    .doc(projectId)
+    .collection("quote")
+    .doc("current")
+    .onSnapshot((snap) => onQuote(docToQuote(snap)));
 }

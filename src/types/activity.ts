@@ -13,7 +13,8 @@ export type ActivityEventType =
   | "video_analysed"
   | "quote_sent"
   | "quote_accepted"
-  | "quote_rejected";
+  | "quote_rejected"
+  | "quote_revision_requested";
 
 interface ActivityEventBase {
   id: string;
@@ -67,10 +68,16 @@ export interface QuoteRejectedEvent extends ActivityEventBase {
   payload: { version: number; reason?: string };
 }
 
+export interface QuoteRevisionRequestedEvent extends ActivityEventBase {
+  type: "quote_revision_requested";
+  payload: { version: number; message: string };
+}
+
 export type ActivityEvent =
   | MessageEvent
   | FileUploadedEvent
   | VideoAnalysedEvent
   | QuoteSentEvent
   | QuoteAcceptedEvent
-  | QuoteRejectedEvent;
+  | QuoteRejectedEvent
+  | QuoteRevisionRequestedEvent;

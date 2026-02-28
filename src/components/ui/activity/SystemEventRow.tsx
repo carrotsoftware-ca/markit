@@ -1,10 +1,11 @@
 import { useTheme } from "@/src/context/ThemeContext";
 import {
-    ActivityEvent,
-    QuoteAcceptedEvent,
-    QuoteRejectedEvent,
-    QuoteSentEvent,
-    VideoAnalysedEvent
+  ActivityEvent,
+  QuoteAcceptedEvent,
+  QuoteRejectedEvent,
+  QuoteRevisionRequestedEvent,
+  QuoteSentEvent,
+  VideoAnalysedEvent,
 } from "@/src/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
@@ -50,6 +51,14 @@ function getEventConfig(event: SystemEventRowProps["event"]): {
         color: "#e74c3c",
         label: `Quote v${(event as QuoteRejectedEvent).payload.version} rejected`,
       };
+    case "quote_revision_requested": {
+      const msg = (event as QuoteRevisionRequestedEvent).payload.message;
+      return {
+        icon: "pencil-circle-outline",
+        color: "#f39c12",
+        label: `Revisions requested — "${msg}"`,
+      };
+    }
   }
 }
 

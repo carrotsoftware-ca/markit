@@ -1,30 +1,41 @@
 import ConfirmDialog from "@/src/components/ui/ConfirmDialog";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
-import { ActivityFeed, MessageComposer } from "@/src/components/ui/activity";
-import {
-  ProjectAssets,
-  ProjectDescription,
-  ProjectPortalCard,
-  ProjectTab,
-  ProjectTabBar,
-  UploadedFiles,
-} from "@/src/components/ui/projects";
-import { QuoteEditor } from "@/src/components/ui/quote/QuoteEditor";
 import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
-import { useActivity } from "@/src/hooks/useActivity";
-import { takePhoto } from "@/src/hooks/useCamera";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
-import { pickMedia } from "@/src/hooks/useMediaPicker";
 import { useQuote } from "@/src/hooks/useQuote";
-import { deleteProjectFile, sendPortalInvite, uploadProjectFile } from "@/src/services/projects";
+import { sendPortalInvite } from "@/src/services/projects";
+import { calcQuoteTotal, formatCurrency } from "@/src/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView, View } from "react-native";
+import { Alert, Pressable, ScrollView, StyleSheet, Text, View } from "react-native";
 
-export default function ProjectDetailsScreen() {
+// ---------------------------------------------------------------------------
+// Row definitions
+// ---------------------------------------------------------------------------
+
+type RowId = "quote" | "files" | "chat" | "access";
+
+interface ActionRow {
+  id: RowId;
+  icon: React.ComponentProps<typeof MaterialCommunityIcons>["name"];
+  label: string;
+}
+
+const ROWS: ActionRow[] = [
+  { id: "quote", icon: "file-document-edit-outline", label: "Quote" },
+  { id: "files", icon: "folder-open-outline", label: "Files" },
+  { id: "chat", icon: "chat-outline", label: "Chat" },
+  { id: "access", icon: "shield-account-outline", label: "Access" },
+];
+
+// ---------------------------------------------------------------------------
+// Screen
+// ---------------------------------------------------------------------------
+
+export default function ProjectDashboard() {
   const { projectId, name, status } = useLocalSearchParams();
   const { deleteProject, watchProject, watchProjectFiles, project, files } = useProjects();
   const { user } = useAuth();
@@ -32,26 +43,19 @@ export default function ProjectDetailsScreen() {
   const router = useRouter();
   const dialog = useConfirmDialog();
   const [inviting, setInviting] = useState(false);
-  const [activeTab, setActiveTab] = useState<ProjectTab>("feed");
 
-  const { events, send, isSending } = useActivity({
-    projectId: projectId as string,
-    visibility: "contractor",
-    authorId: user?.id ?? "",
-    authorName: user?.displayName ?? user?.email ?? "Contractor",
-  });
+  useFocusEffect(
+    useCallback(() => {
+      const unsubProject = watchProject(projectId as string);
+      const unsubFiles = watchProjectFiles(projectId as string);
+      return () => {
+        unsubProject();
+        unsubFiles();
+      };
+    }, [projectId]),
+  );
 
-  const {
-    lineItems,
-    currency,
-    quote,
-    isSaving: isQuoteSaving,
-    isSending: isQuoteSending,
-    updateLineItem,
-    addLineItem,
-    removeLineItem,
-    send: sendQuote,
-  } = useQuote(
+  const { quote } = useQuote(
     projectId as string,
     files,
     user?.id ?? "",
@@ -60,10 +64,7 @@ export default function ProjectDetailsScreen() {
 
   const handleInviteClient = async () => {
     if (!project?.client_email) {
-      Alert.alert(
-        "No client email",
-        "Add a client email address to this project before sending an invite.",
-      );
+      Alert.alert("No client email", "Add a client email address before sending an invite.");
       return;
     }
     setInviting(true);
@@ -77,60 +78,45 @@ export default function ProjectDetailsScreen() {
     }
   };
 
-  useFocusEffect(
-    useCallback(() => {
-      // Subscribe to both the project document AND its files subcollection.
-      // Both return unsubscribe functions; we call them both on cleanup.
-      const unsubProject = watchProject(projectId as string);
-      const unsubFiles = watchProjectFiles(projectId as string);
-      return () => {
-        unsubProject();
-        unsubFiles();
-      };
-    }, [projectId]),
-  );
-
-  const handleUpload = async () => {
-    const media = await pickMedia();
-    if (!media) return;
-    await uploadProjectFile(
-      projectId as string,
-      media.uri,
-      media.filename,
-      media.mimeType,
-      media.fileSize,
-    );
-  };
-
-  const handleCamera = async () => {
-    const photo = await takePhoto();
-    if (!photo) return;
-    await uploadProjectFile(
-      projectId as string,
-      photo.uri,
-      photo.filename,
-      photo.mimeType,
-      photo.fileSize,
-    );
-  };
-
-  const handleFilePress = (fileId: string) => {
+  const handleRowPress = (id: RowId) => {
     router.push({
-      pathname: "/(contractor)/projects/[projectId]/[fileId]",
-      params: { projectId: projectId as string, fileId },
+      pathname: `/(contractor)/projects/[projectId]/${id}` as any,
+      params: { projectId: projectId as string, name: name as string, status: status as string },
     });
   };
 
-  const handleFileMenu = (fileId: string) => {
-    const file = files.find((f) => f.id === fileId);
-    if (!file) return;
-    dialog.show({
-      title: "Delete File",
-      message: `Are you sure you want to delete "${file.filename}"?`,
-      confirmLabel: "Delete",
-      onConfirm: () => deleteProjectFile(projectId as string, file),
-    });
+  // Per-row detail text shown under the label
+  const rowDetail = (id: RowId): string | null => {
+    switch (id) {
+      case "quote": {
+        if (!quote || quote.status === "draft") return "Draft";
+        const total = formatCurrency(calcQuoteTotal(quote.lineItems), quote.currency);
+        const statusLabel =
+          quote.status === "revision_requested"
+            ? "Revisions requested"
+            : quote.status.charAt(0).toUpperCase() + quote.status.slice(1);
+        return `${statusLabel} · ${total}`;
+      }
+      case "files":
+        return files.length > 0
+          ? `${files.length} file${files.length !== 1 ? "s" : ""}`
+          : "No files yet";
+      case "chat":
+        return null;
+      case "access":
+        return project?.client_email ?? "No client email";
+    }
   };
+
+  // Accent dot colour for urgent states
+  const rowAccent = (id: RowId): string | null => {
+    if (id === "quote" && quote?.status === "revision_requested") return "#f39c12";
+    if (id === "quote" && quote?.status === "accepted") return "#2ecc71";
+    if (id === "quote" && quote?.status === "rejected") return "#e74c3c";
+    return null;
+  };
+
+  const ORANGE = theme.colors.safetyOrange;
 
   return (
     <>
@@ -147,14 +133,14 @@ export default function ProjectDetailsScreen() {
             <MaterialCommunityIcons
               name="email-arrow-right-outline"
               size={24}
-              color={inviting ? theme.colors.text.secondary : theme.colors.safetyOrange}
+              color={inviting ? theme.colors.text.secondary : ORANGE}
             />
           </Pressable>
           <Pressable
             onPress={() =>
               dialog.show({
                 title: "Delete Project",
-                message: `Are you sure you want to delete "${name}"? This action cannot be undone.`,
+                message: `Are you sure you want to delete "${name}"? This cannot be undone.`,
                 confirmLabel: "Delete",
                 onConfirm: async () => {
                   await deleteProject(projectId);
@@ -166,62 +152,58 @@ export default function ProjectDetailsScreen() {
             <MaterialCommunityIcons name="trash-can-outline" size={24} color="red" />
           </Pressable>
         </DetailsWrapper.HeaderAction>
+
         <DetailsWrapper.Content>
-          <ProjectTabBar active={activeTab} onChange={setActiveTab} />
+          <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={styles.list}>
+            {ROWS.map((row) => {
+              const detail = rowDetail(row.id);
+              const accent = rowAccent(row.id);
+              return (
+                <Pressable
+                  key={row.id}
+                  onPress={() => handleRowPress(row.id)}
+                  style={({ pressed }) => [
+                    styles.row,
+                    { backgroundColor: theme.colors.surface, borderColor: theme.colors.border },
+                    pressed && styles.rowPressed,
+                  ]}
+                >
+                  {/* Icon */}
+                  <View style={[styles.iconWrap, { backgroundColor: ORANGE + "1A" }]}>
+                    <MaterialCommunityIcons name={row.icon} size={24} color={ORANGE} />
+                  </View>
 
-          {/* ── Feed ─────────────────────────────────────────────────────── */}
-          {activeTab === "feed" && (
-            <View style={{ flex: 1 }}>
-              <ActivityFeed events={events} currentUserId={user?.id ?? ""} />
-              <MessageComposer onSend={send} isSending={isSending} showInternalToggle />
-            </View>
-          )}
+                  {/* Labels */}
+                  <View style={styles.rowText}>
+                    <Text style={[styles.rowLabel, { color: theme.colors.text.primary }]}>
+                      {row.label}
+                    </Text>
+                    {detail ? (
+                      <Text
+                        style={[styles.rowDetail, { color: accent ?? theme.colors.text.secondary }]}
+                        numberOfLines={1}
+                      >
+                        {detail}
+                      </Text>
+                    ) : null}
+                  </View>
 
-          {/* ── Files ────────────────────────────────────────────────────── */}
-          {activeTab === "files" && (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 32 }}
-            >
-              <ProjectAssets onUpload={handleUpload} onCamera={handleCamera} />
-              <UploadedFiles
-                files={files}
-                onFileMenu={handleFileMenu}
-                onFilePress={handleFilePress}
-              />
-            </ScrollView>
-          )}
+                  {/* Accent dot for urgent states */}
+                  {accent && <View style={[styles.accentDot, { backgroundColor: accent }]} />}
 
-          {/* ── Quote ────────────────────────────────────────────────────── */}
-          {activeTab === "quote" && (
-            <QuoteEditor
-              lineItems={lineItems}
-              currency={currency}
-              status={quote?.status ?? "draft"}
-              isSaving={isQuoteSaving}
-              isSending={isQuoteSending}
-              onUpdateLineItem={updateLineItem}
-              onAddLineItem={addLineItem}
-              onRemoveLineItem={removeLineItem}
-              onSend={sendQuote}
-            />
-          )}
-
-          {/* ── Access ───────────────────────────────────────────────────── */}
-          {activeTab === "access" && (
-            <ScrollView
-              showsVerticalScrollIndicator={false}
-              contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: 16 }}
-            >
-              <ProjectDescription
-                description={project?.description}
-                client_email={project?.client_email}
-              />
-              {project && <ProjectPortalCard project={project} projectId={projectId as string} />}
-            </ScrollView>
-          )}
+                  {/* Chevron */}
+                  <MaterialCommunityIcons
+                    name="chevron-right"
+                    size={22}
+                    color={theme.colors.text.secondary}
+                  />
+                </Pressable>
+              );
+            })}
+          </ScrollView>
         </DetailsWrapper.Content>
       </DetailsWrapper>
+
       <ConfirmDialog
         visible={dialog.visible}
         title={dialog.options?.title ?? ""}
@@ -235,3 +217,45 @@ export default function ProjectDetailsScreen() {
     </>
   );
 }
+
+const styles = StyleSheet.create({
+  list: {
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    gap: 10,
+  },
+  row: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderRadius: 14,
+    borderWidth: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 14,
+    gap: 14,
+  },
+  rowPressed: { opacity: 0.7 },
+  iconWrap: {
+    width: 44,
+    height: 44,
+    borderRadius: 12,
+    alignItems: "center",
+    justifyContent: "center",
+    flexShrink: 0,
+  },
+  rowText: { flex: 1 },
+  rowLabel: {
+    fontSize: 16,
+    fontWeight: "600",
+    marginBottom: 2,
+  },
+  rowDetail: {
+    fontSize: 13,
+    fontWeight: "400",
+  },
+  accentDot: {
+    width: 8,
+    height: 8,
+    borderRadius: 4,
+    flexShrink: 0,
+  },
+});

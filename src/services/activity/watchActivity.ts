@@ -15,6 +15,7 @@ export function watchActivity(
   visibility: ActivityVisibility,
   setEvents: (events: ActivityEvent[]) => void,
 ): () => void {
+  if (!projectId) return () => {};
   const db = getFirestore();
 
   let query = db
