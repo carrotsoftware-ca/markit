@@ -17,17 +17,22 @@ export function watchProjectFiles(
     .collection("projects")
     .doc(projectId)
     .collection("files")
-    .onSnapshot((snapshot) => {
-      if (!snapshot) return;
-      const files: ProjectFile[] = snapshot.docs
-        .map((doc) => ({
-          ...(doc.data() as ProjectFile),
-          id: doc.id,
-        }))
-        // Newest first — fileId starts with Date.now() so lexicographic desc == time desc
-        .sort((a, b) => b.id.localeCompare(a.id));
-      setFiles(files);
-    });
+    .onSnapshot(
+      (snapshot) => {
+        if (!snapshot) return;
+        const files: ProjectFile[] = snapshot.docs
+          .map((doc) => ({
+            ...(doc.data() as ProjectFile),
+            id: doc.id,
+          }))
+          // Newest first — fileId starts with Date.now() so lexicographic desc == time desc
+          .sort((a, b) => b.id.localeCompare(a.id));
+        setFiles(files);
+      },
+      (error) => {
+        console.warn("watchProjectFiles error:", error.code, error.message);
+      },
+    );
 
   return unsubscribe;
 }

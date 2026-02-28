@@ -30,5 +30,10 @@ export function watchQuote(projectId: string, onQuote: (quote: Quote | null) => 
     .doc(projectId)
     .collection("quote")
     .doc("current")
-    .onSnapshot((snap) => onQuote(docToQuote(snap)));
+    .onSnapshot(
+      (snap) => onQuote(docToQuote(snap)),
+      (error) => {
+        console.warn("watchQuote error:", error.code, error.message);
+      },
+    );
 }

@@ -33,6 +33,29 @@ if (Platform.OS === "web") {
   require("@/src/services/firebase/index");
 }
 
+// The Firebase compat SDK (v8 API over v9 internals) has a dual error path:
+// it calls the user-supplied onError callback AND re-dispatches the error
+// through its internal AsyncQueue via setTimeout. The second dispatch bypasses
+// our onError handlers and reaches React as an unhandled rejection, triggering
+// React error #418. We intercept it here at the window level and swallow
+// Firestore listener errors that we've already handled in each watcher.
+if (Platform.OS === "web" && typeof window !== "undefined") {
+  const FIRESTORE_LISTENER_ERRORS = new Set([
+    "permission-denied",
+    "failed-precondition",
+    "unavailable",
+    "unauthenticated",
+  ]);
+
+  window.addEventListener("unhandledrejection", (event) => {
+    const error = event.reason;
+    if (error?.name === "FirebaseError" && FIRESTORE_LISTENER_ERRORS.has(error?.code)) {
+      event.preventDefault();
+      console.warn("[Firestore] Suppressed unhandled listener error:", error.code, error.message);
+    }
+  });
+}
+
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
     "SpaceGrotesk-Light": require("../../assets/fonts/space_grotesk/static/SpaceGrotesk-Light.ttf"),
@@ -48,8 +71,11 @@ export default function RootLayout() {
     }
   }, [fontsLoaded]);
 
-  if (!fontsLoaded) {
-    return null; // Keep splash screen visible
+  // On web, returning null during font load causes a hydration mismatch (React
+  // error #418) because the static pre-render always has the full tree.
+  // Fonts load near-instantly on web, so we just render immediately.
+  if (!fontsLoaded && Platform.OS !== "web") {
+    return null; // Keep splash screen visible (native only)
   }
 
   return (

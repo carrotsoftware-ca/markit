@@ -33,10 +33,18 @@ export function useActivity({
 
   useEffect(() => {
     setIsLoading(true);
-    const unsubscribe = watchActivity(projectId, visibility, (incoming) => {
-      setEvents(incoming);
-      setIsLoading(false);
-    });
+    const unsubscribe = watchActivity(
+      projectId,
+      visibility,
+      (incoming) => {
+        setEvents(incoming);
+        setIsLoading(false);
+      },
+      () => {
+        // Error path — stop showing spinner
+        setIsLoading(false);
+      },
+    );
     return unsubscribe;
   }, [projectId, visibility]);
 
