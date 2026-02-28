@@ -195,7 +195,10 @@ export default function PortalPage() {
         <Tile
           icon="💬"
           label="Chat"
-          badge={events.length > 0 ? String(events.length) : null}
+          badge={(() => {
+            const n = events.filter((e) => e.type === "message").length;
+            return n > 0 ? String(n) : null;
+          })()}
           active={effectiveSection === "chat"}
           onPress={() => openSection("chat")}
         />
