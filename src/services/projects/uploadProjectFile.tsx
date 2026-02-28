@@ -1,6 +1,12 @@
 import { getFirestore, getStorage } from "@/src/services/firebase";
-import { ProjectFile } from "@/src/types";
+import { ProjectFile, ProjectFileType } from "@/src/types";
 import { Platform } from "react-native";
+
+function inferFileType(mimeType?: string): ProjectFileType {
+  if (mimeType?.startsWith("video/")) return "video";
+  if (mimeType?.startsWith("image/")) return "image";
+  return "document";
+}
 
 export async function uploadProjectFile(
   projectId: string,
@@ -25,6 +31,7 @@ export async function uploadProjectFile(
   // Write the optimistic "uploading" row immediately so the UI shows it right away
   const optimisticFile: ProjectFile = {
     id: fileId,
+    type: inferFileType(mimeType),
     filename,
     size: fileSize ? `${(fileSize / 1024).toFixed(0)} KB` : "—",
     date: new Date().toLocaleDateString("en-US", {

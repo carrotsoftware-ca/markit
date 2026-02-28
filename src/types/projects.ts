@@ -1,5 +1,8 @@
+export type ProjectFileType = "image" | "video" | "document";
+
 export interface ProjectFile {
   id: string;
+  type: ProjectFileType;
   status: "uploading" | "done" | "error";
   filename: string;
   size: string;
@@ -14,6 +17,13 @@ export interface ProjectFile {
   // user-editable metadata
   name?: string; // friendly display name — distinct from filename
   notes?: string;
+  // AI analysis fields — video only, written by Cloud Function, never by the client
+  aiStatus?: "processing" | "analysed" | "error";
+  aiError?: string;
+  transcript?: string;
+  categories?: string[];
+  summary?: string;
+  analysedAt?: string;
 }
 
 export interface Project {

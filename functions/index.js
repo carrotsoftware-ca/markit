@@ -9,6 +9,7 @@ const {
   enablePortal,
   deletePortal,
 } = require("./portal");
+const { analyseProjectFile } = require("./ai");
 
 admin.initializeApp();
 setGlobalOptions({ maxInstances: 10 });
@@ -21,4 +22,5 @@ module.exports = {
   disablePortal,
   enablePortal,
   deletePortal,
+  analyseProjectFile,
 };
