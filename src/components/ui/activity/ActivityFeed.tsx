@@ -2,6 +2,7 @@ import { ActivityEvent } from "@/src/types";
 import React, { useEffect, useRef } from "react";
 import { FlatList, StyleSheet } from "react-native";
 import { CommentRow } from "./CommentRow";
+import { MessageBubble } from "./MessageBubble";
 
 interface ActivityFeedProps {
   events: ActivityEvent[];
@@ -25,7 +26,13 @@ export function ActivityFeed({ events, currentUserId }: ActivityFeedProps) {
       contentContainerStyle={styles.content}
       showsVerticalScrollIndicator={false}
       onContentSizeChange={() => flatListRef.current?.scrollToEnd({ animated: false })}
-      renderItem={({ item }) => <CommentRow event={item} currentUserId={currentUserId} />}
+      renderItem={({ item }) =>
+        item.type === "message" ? (
+          <MessageBubble event={item as any} currentUserId={currentUserId} />
+        ) : (
+          <CommentRow event={item} currentUserId={currentUserId} />
+        )
+      }
     />
   );
 }
