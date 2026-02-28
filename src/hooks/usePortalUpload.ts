@@ -1,8 +1,8 @@
 import { FileWithEvents } from "@/src/components/ui/portal/PortalFileRow";
 import {
-    getPortalEvents,
-    getPortalFiles,
-    uploadPortalFile,
+  getPortalEvents,
+  getPortalFiles,
+  uploadPortalFile,
 } from "@/src/services/projects/getPortalProject";
 import * as ImagePicker from "expo-image-picker";
 import { useState } from "react";
@@ -13,6 +13,8 @@ export type UploadState = { filename: string; progress: number; done: boolean };
 export function usePortalUpload(
   projectId: string,
   onFilesRefreshed: (items: FileWithEvents[]) => void,
+  authorId?: string,
+  authorName?: string,
 ) {
   const [uploads, setUploads] = useState<UploadState[]>([]);
 
@@ -63,6 +65,8 @@ export function usePortalUpload(
               prev.map((u) => (u.filename === filename ? { ...u, progress: pct } : u)),
             );
           },
+          authorId,
+          authorName,
         );
 
         setUploads((prev) =>

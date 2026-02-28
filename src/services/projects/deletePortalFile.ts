@@ -2,26 +2,25 @@ import { addSystemEvent } from "@/src/services/activity";
 import { getFirestore, getStorage } from "@/src/services/firebase";
 import { ProjectFile } from "@/src/types";
 
-export async function deleteProjectFile(
+/**
+ * Deletes a file from a project via the portal (authenticated as portal client).
+ * Removes the Storage object and Firestore file doc, then emits a file_deleted
+ * activity event visible to both the contractor and the client.
+ */
+export async function deletePortalFile(
   projectId: string,
   file: ProjectFile,
   authorId?: string,
   authorName?: string,
 ): Promise<void> {
-  // Delete the file from Firebase Storage first (best-effort)
   if (file.storagePath) {
     try {
       await getStorage().ref(file.storagePath).delete();
     } catch {
-      // file may already be gone — that's fine
+      // already gone — that's fine
     }
   }
 
-  // Delete the file document from the subcollection.
-  // Note: this does NOT delete the events subcollection under it —
-  // Firestore subcollections must be deleted separately (or via a Cloud Function).
-  // For now we leave orphaned events in place; they'll be unreachable without
-  // the file doc and can be cleaned up later.
   await getFirestore()
     .collection("projects")
     .doc(projectId)
@@ -29,7 +28,6 @@ export async function deleteProjectFile(
     .doc(file.id)
     .delete();
 
-  // Emit activity event so the feed shows who deleted what
   await addSystemEvent(
     projectId,
     "file_deleted",

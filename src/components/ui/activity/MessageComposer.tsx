@@ -1,25 +1,20 @@
 import { useTheme } from "@/src/context/ThemeContext";
-import { ActivityVisibility } from "@/src/types";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useState } from "react";
-import { Pressable, StyleSheet, Switch, Text, TextInput, View } from "react-native";
+import { Pressable, StyleSheet, TextInput, View } from "react-native";
 
 interface MessageComposerProps {
-  onSend: (text: string, visibleTo?: ActivityVisibility) => Promise<void>;
+  onSend: (text: string) => Promise<void>;
   isSending: boolean;
-  /** When true, shows the "internal note" toggle (contractor only). */
-  showInternalToggle?: boolean;
 }
 
-export function MessageComposer({ onSend, isSending, showInternalToggle }: MessageComposerProps) {
+export function MessageComposer({ onSend, isSending }: MessageComposerProps) {
   const { theme } = useTheme();
   const [text, setText] = useState("");
-  const [isInternal, setIsInternal] = useState(false);
 
   const handleSend = async () => {
     if (!text.trim() || isSending) return;
-    const visibleTo: ActivityVisibility = isInternal ? "contractor" : "all";
-    await onSend(text, visibleTo);
+    await onSend(text);
     setText("");
   };
 
@@ -33,32 +28,11 @@ export function MessageComposer({ onSend, isSending, showInternalToggle }: Messa
         },
       ]}
     >
-      {showInternalToggle && (
-        <View style={styles.toggleRow}>
-          <Text
-            style={[
-              styles.toggleLabel,
-              {
-                color: theme.colors.text.secondary,
-                fontFamily: theme.typography.fontFamily.regular,
-              },
-            ]}
-          >
-            Internal note (only you can see this)
-          </Text>
-          <Switch
-            value={isInternal}
-            onValueChange={setIsInternal}
-            trackColor={{ true: theme.colors.safetyOrange }}
-            thumbColor="#fff"
-          />
-        </View>
-      )}
       <View style={styles.row}>
         <TextInput
           value={text}
           onChangeText={setText}
-          placeholder={isInternal ? "Add an internal note..." : "Message client..."}
+          placeholder="Message..."
           placeholderTextColor={theme.colors.text.secondary}
           style={[
             styles.input,
@@ -66,9 +40,7 @@ export function MessageComposer({ onSend, isSending, showInternalToggle }: Messa
               backgroundColor: theme.colors.background,
               color: theme.colors.text.primary,
               fontFamily: theme.typography.fontFamily.regular,
-              borderColor: isInternal
-                ? theme.colors.safetyOrange + "66"
-                : theme.colors.text.secondary + "33",
+              borderColor: theme.colors.text.secondary + "33",
             },
           ]}
           multiline
@@ -99,15 +71,6 @@ const styles = StyleSheet.create({
     borderTopWidth: 1,
     paddingHorizontal: 12,
     paddingVertical: 10,
-  },
-  toggleRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: 8,
-  },
-  toggleLabel: {
-    fontSize: 12,
   },
   row: {
     flexDirection: "row",

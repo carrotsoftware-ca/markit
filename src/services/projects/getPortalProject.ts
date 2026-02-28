@@ -1,6 +1,13 @@
+import { addSystemEvent } from "@/src/services/activity";
 import { getFirestore, getStorage } from "@/src/services/firebase";
-import { MarkitEvent, PortalSession, Project, ProjectFile } from "@/src/types";
+import { MarkitEvent, PortalSession, Project, ProjectFile, ProjectFileType } from "@/src/types";
 import { Platform } from "react-native";
+
+function inferFileType(mimeType?: string): ProjectFileType {
+  if (mimeType?.startsWith("video/")) return "video";
+  if (mimeType?.startsWith("image/")) return "image";
+  return "document";
+}
 
 /**
  * Fetches a project by its portal token.
@@ -37,6 +44,30 @@ export async function getPortalFiles(projectId: string): Promise<ProjectFile[]> 
 }
 
 /**
+ * Real-time listener on the files subcollection for a portal project.
+ * Fires on every add/update/delete so the UI stays in sync without polling.
+ * Returns an unsubscribe function — call it in useEffect cleanup.
+ */
+export function watchPortalFiles(
+  projectId: string,
+  onFiles: (files: ProjectFile[]) => void,
+): () => void {
+  if (!projectId) return () => {};
+  const db = getFirestore();
+  return db
+    .collection("projects")
+    .doc(projectId)
+    .collection("files")
+    .onSnapshot(
+      (snap) =>
+        onFiles(
+          snap.docs.map((doc) => ({ id: doc.id, ...(doc.data() as Omit<ProjectFile, "id">) })),
+        ),
+      () => onFiles([]),
+    );
+}
+
+/**
  * Fetches all MarkIt events for a specific file (portal — no auth required).
  */
 export async function getPortalEvents(projectId: string, fileId: string): Promise<MarkitEvent[]> {
@@ -68,6 +99,8 @@ export async function uploadPortalFile(
   mimeType: string | undefined,
   fileSize: number | undefined,
   onProgress?: (pct: number) => void,
+  authorId?: string,
+  authorName?: string,
 ): Promise<{ fileId: string; url: string }> {
   const fileId = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
   const storagePath = `projects/${projectId}/${fileId}`;
@@ -109,6 +142,16 @@ export async function uploadPortalFile(
 
   const url = await storageRef.getDownloadURL();
   await fileRef.update({ status: "done", url });
+
+  // Emit a file_uploaded activity event visible to everyone (contractor + portal)
+  await addSystemEvent(
+    projectId,
+    "file_uploaded",
+    { fileId, filename, fileType: inferFileType(mimeType) },
+    authorId,
+    authorName,
+  );
+
   return { fileId, url };
 }
 

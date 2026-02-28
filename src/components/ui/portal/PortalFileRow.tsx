@@ -1,6 +1,7 @@
 import { MarkitEvent, ProjectFile } from "@/src/types";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React from "react";
-import { Image, Pressable, StyleSheet, Text, View } from "react-native";
+import { Image, Platform, Pressable, StyleSheet, Text, View } from "react-native";
 
 export type FileWithEvents = { file: ProjectFile; events: MarkitEvent[] };
 
@@ -15,9 +16,10 @@ interface PortalFileRowProps {
   file: ProjectFile;
   measurementCount: number;
   onPress: () => void;
+  onDelete?: () => void;
 }
 
-export function PortalFileRow({ file, measurementCount, onPress }: PortalFileRowProps) {
+export function PortalFileRow({ file, measurementCount, onPress, onDelete }: PortalFileRowProps) {
   const displayName = file.name || file.filename;
   const dateStr = file.date
     ? new Date(file.date).toLocaleDateString(undefined, {
@@ -26,6 +28,21 @@ export function PortalFileRow({ file, measurementCount, onPress }: PortalFileRow
         year: "numeric",
       })
     : "";
+
+  const handleDeletePress = () => {
+    if (Platform.OS === "web") {
+      // Alert.alert is a no-op on web — use the native browser confirm dialog
+      if (window.confirm(`Delete "${displayName}"?`)) {
+        onDelete?.();
+      }
+    } else {
+      const { Alert } = require("react-native");
+      Alert.alert("Delete File", `Are you sure you want to delete "${displayName}"?`, [
+        { text: "Cancel", style: "cancel" },
+        { text: "Delete", style: "destructive", onPress: onDelete },
+      ]);
+    }
+  };
 
   return (
     <Pressable
@@ -50,7 +67,15 @@ export function PortalFileRow({ file, measurementCount, onPress }: PortalFileRow
             : ""}
         </Text>
       </View>
-      <Text style={styles.chevron}>›</Text>
+      {onDelete ? (
+        <View onStartShouldSetResponder={() => true} onTouchEnd={(e) => e.stopPropagation()}>
+          <Pressable onPress={handleDeletePress} style={styles.deleteBtn} hitSlop={8}>
+            <MaterialCommunityIcons name="trash-can-outline" size={20} color="#e74c3c" />
+          </Pressable>
+        </View>
+      ) : (
+        <Text style={styles.chevron}>›</Text>
+      )}
     </Pressable>
   );
 }
@@ -82,4 +107,5 @@ const styles = StyleSheet.create({
   name: { color: "#fff", fontWeight: "600", fontSize: 15, marginBottom: 4 },
   meta: { color: "#888", fontSize: 13 },
   chevron: { color: "#888", fontSize: 24, lineHeight: 28 },
+  deleteBtn: { padding: 4 },
 });

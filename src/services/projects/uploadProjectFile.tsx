@@ -15,6 +15,8 @@ export async function uploadProjectFile(
   filename: string,
   mimeType: string | undefined,
   fileSize: number | undefined,
+  authorId?: string,
+  authorName?: string,
 ): Promise<{ fileId: string; url: string }> {
   const fileId = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
   const storagePath = `projects/${projectId}/${fileId}`;
@@ -58,11 +60,17 @@ export async function uploadProjectFile(
   await fileRef.update({ status: "done", url });
 
   // Emit a system event so the activity feed reflects the upload
-  await addSystemEvent(projectId, "file_uploaded", {
-    fileId,
-    filename,
-    fileType: inferFileType(mimeType),
-  });
+  await addSystemEvent(
+    projectId,
+    "file_uploaded",
+    {
+      fileId,
+      filename,
+      fileType: inferFileType(mimeType),
+    },
+    authorId,
+    authorName,
+  );
 
   return { fileId, url };
 }

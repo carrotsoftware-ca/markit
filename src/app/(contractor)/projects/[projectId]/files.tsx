@@ -1,6 +1,7 @@
 import ConfirmDialog from "@/src/components/ui/ConfirmDialog";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
 import { ProjectAssets, UploadedFiles } from "@/src/components/ui/projects";
+import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { takePhoto } from "@/src/hooks/useCamera";
@@ -16,6 +17,7 @@ export default function FilesScreen() {
   const { projectId, name } = useLocalSearchParams();
   const { watchProject, watchProjectFiles, files } = useProjects();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const router = useRouter();
   const dialog = useConfirmDialog();
 
@@ -39,6 +41,8 @@ export default function FilesScreen() {
       media.filename,
       media.mimeType,
       media.fileSize,
+      user?.id,
+      user?.displayName,
     );
   };
 
@@ -51,6 +55,8 @@ export default function FilesScreen() {
       photo.filename,
       photo.mimeType,
       photo.fileSize,
+      user?.id,
+      user?.displayName,
     );
   };
 
@@ -68,7 +74,7 @@ export default function FilesScreen() {
       title: "Delete File",
       message: `Are you sure you want to delete "${file.filename}"?`,
       confirmLabel: "Delete",
-      onConfirm: () => deleteProjectFile(projectId as string, file),
+      onConfirm: () => deleteProjectFile(projectId as string, file, user?.id, user?.displayName),
     });
   };
 

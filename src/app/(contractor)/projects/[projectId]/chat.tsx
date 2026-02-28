@@ -34,7 +34,7 @@ export default function ChatScreen() {
       <DetailsWrapper.Content>
         <View style={{ flex: 1 }}>
           <ActivityFeed events={events} currentUserId={user?.id ?? ""} />
-          <MessageComposer onSend={send} isSending={isSending} showInternalToggle />
+          <MessageComposer onSend={send} isSending={isSending} />
         </View>
       </DetailsWrapper.Content>
     </DetailsWrapper>

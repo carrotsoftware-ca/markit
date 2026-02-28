@@ -6,10 +6,11 @@ import { useActivity } from "@/src/hooks/useActivity";
 import { usePortalQuote } from "@/src/hooks/usePortalQuote";
 import { usePortalUpload } from "@/src/hooks/usePortalUpload";
 import { getAuth } from "@/src/services/firebase";
+import { deletePortalFile } from "@/src/services/projects/deletePortalFile";
 import {
   getPortalEvents,
-  getPortalFiles,
   getProjectByToken,
+  watchPortalFiles,
 } from "@/src/services/projects/getPortalProject";
 import { activatePortal, getPortalCustomToken } from "@/src/services/projects/sendPortalInvite";
 import { watchQuote } from "@/src/services/projects/watchQuote";
@@ -53,7 +54,12 @@ export default function PortalPage() {
   };
 
   // Hooks
-  const { uploads, handleUpload } = usePortalUpload(project?.id ?? "", setItems);
+  const { uploads, handleUpload } = usePortalUpload(
+    project?.id ?? "",
+    setItems,
+    clientId,
+    clientName,
+  );
   const { respond, requestRevision, isResponding } = usePortalQuote(
     project?.id ?? "",
     quote,
@@ -70,6 +76,21 @@ export default function PortalPage() {
   useEffect(() => {
     if (!project?.id) return;
     return watchQuote(project.id, setQuote);
+  }, [project?.id]);
+
+  // Real-time file watcher — fires on upload, update and delete
+  useEffect(() => {
+    if (!project?.id) return;
+    return watchPortalFiles(project.id, async (files) => {
+      const doneFiles = files.filter((f) => f.status === "done");
+      const withEvents = await Promise.all(
+        doneFiles.map(async (file) => ({
+          file,
+          events: await getPortalEvents(project.id, file.id),
+        })),
+      );
+      setItems(withEvents);
+    });
   }, [project?.id]);
 
   useEffect(() => {
@@ -94,14 +115,6 @@ export default function PortalPage() {
         const platform =
           Platform.OS === "ios" ? "ios" : Platform.OS === "android" ? "android" : "web";
         activatePortal(token, platform).catch(() => {});
-
-        const files = await getPortalFiles(proj.id);
-        const withEvents = await Promise.all(
-          files
-            .filter((f) => f.status === "done")
-            .map(async (file) => ({ file, events: await getPortalEvents(proj.id, file.id) })),
-        );
-        setItems(withEvents);
       } catch {
         setRevoked(true);
       } finally {
@@ -142,6 +155,12 @@ export default function PortalPage() {
       pathname: "/portal/measure",
       params: { fileUrl: item.file.url, projectId: project.id, fileId: item.file.id },
     });
+  };
+
+  const handleFileDelete = async (item: FileWithEvents) => {
+    if (!project?.id) return;
+    await deletePortalFile(project.id, item.file, clientId, clientName);
+    // No manual state update — watchPortalFiles snapshot fires automatically
   };
 
   const showQuote = !!quote && quote.status !== "draft";
@@ -225,6 +244,7 @@ export default function PortalPage() {
             items={items}
             uploads={uploads}
             onFilePress={handleFilePress}
+            onFileDelete={handleFileDelete}
             onUpload={handleUpload}
           />
         </View>
@@ -236,7 +256,7 @@ export default function PortalPage() {
           <View style={styles.feedContainer}>
             <ActivityFeed events={events} currentUserId={clientId} />
           </View>
-          <MessageComposer onSend={send} isSending={isSending} showInternalToggle={false} />
+          <MessageComposer onSend={send} isSending={isSending} />
         </View>
       )}
 

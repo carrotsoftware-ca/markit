@@ -10,6 +10,7 @@ export type ActivityVisibility = "all" | "contractor";
 export type ActivityEventType =
   | "message"
   | "file_uploaded"
+  | "file_deleted"
   | "video_analysed"
   | "quote_sent"
   | "quote_accepted"
@@ -36,6 +37,14 @@ export interface FileUploadedEvent extends ActivityEventBase {
     fileId: string;
     filename: string;
     fileType: "image" | "video" | "document";
+  };
+}
+
+export interface FileDeletedEvent extends ActivityEventBase {
+  type: "file_deleted";
+  payload: {
+    fileId: string;
+    filename: string;
   };
 }
 
@@ -76,6 +85,7 @@ export interface QuoteRevisionRequestedEvent extends ActivityEventBase {
 export type ActivityEvent =
   | MessageEvent
   | FileUploadedEvent
+  | FileDeletedEvent
   | VideoAnalysedEvent
   | QuoteSentEvent
   | QuoteAcceptedEvent

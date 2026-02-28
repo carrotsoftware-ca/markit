@@ -11,10 +11,17 @@ interface PortalFilesProps {
   items: FileWithEvents[];
   uploads: UploadState[];
   onFilePress: (item: FileWithEvents) => void;
+  onFileDelete: (item: FileWithEvents) => void;
   onUpload: () => void;
 }
 
-export function PortalFiles({ items, uploads, onFilePress, onUpload }: PortalFilesProps) {
+export function PortalFiles({
+  items,
+  uploads,
+  onFilePress,
+  onFileDelete,
+  onUpload,
+}: PortalFilesProps) {
   return (
     <View>
       {items.length === 0 && uploads.length === 0 ? (
@@ -30,6 +37,7 @@ export function PortalFiles({ items, uploads, onFilePress, onUpload }: PortalFil
                 file={item.file}
                 measurementCount={measurementCount}
                 onPress={() => onFilePress(item)}
+                onDelete={() => onFileDelete(item)}
               />
             );
           })}

@@ -1,4 +1,5 @@
 export * from "./createProject";
+export * from "./deletePortalFile";
 export * from "./deleteProject";
 export * from "./deleteProjectFile";
 export * from "./getPortalProject";

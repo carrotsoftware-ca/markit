@@ -1,6 +1,7 @@
 import { useTheme } from "@/src/context/ThemeContext";
 import {
   ActivityEvent,
+  FileDeletedEvent,
   QuoteAcceptedEvent,
   QuoteRejectedEvent,
   QuoteRevisionRequestedEvent,
@@ -59,6 +60,15 @@ function getContent(event: ActivityEvent): {
         body: `uploaded ${event.payload.fileType === "video" ? "a video" : "a file"} — ${event.payload.filename}`,
         icon: event.payload.fileType === "video" ? "video-outline" : "paperclip",
         iconColor: "#5b8dee",
+        isSystem: true,
+      };
+
+    case "file_deleted":
+      return {
+        authorLabel: event.authorName ?? "Unknown",
+        body: `deleted a file — ${(event as FileDeletedEvent).payload.filename}`,
+        icon: "trash-can-outline",
+        iconColor: "#e74c3c",
         isSystem: true,
       };
 

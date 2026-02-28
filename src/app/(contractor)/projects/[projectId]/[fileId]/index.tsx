@@ -1,5 +1,6 @@
 import ConfirmDialog from "@/src/components/ui/ConfirmDialog";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
+import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
@@ -8,13 +9,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-  ActivityIndicator,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  View,
+    ActivityIndicator,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    TextInput,
+    View,
 } from "react-native";
 
 export default function ProjectFileScreen() {
@@ -24,6 +25,7 @@ export default function ProjectFileScreen() {
   }>();
   const { watchProjectFiles, files } = useProjects();
   const { theme } = useTheme();
+  const { user } = useAuth();
   const router = useRouter();
   const dialog = useConfirmDialog();
 
@@ -82,7 +84,7 @@ export default function ProjectFileScreen() {
       message: `Are you sure you want to delete "${file.name || file.filename}"? This cannot be undone.`,
       confirmLabel: "Delete",
       onConfirm: async () => {
-        await deleteProjectFile(projectId, file);
+        await deleteProjectFile(projectId, file, user?.id, user?.displayName);
         router.back();
       },
     });
