@@ -1,13 +1,18 @@
 import ConfirmDialog from "@/src/components/ui/ConfirmDialog";
 import DetailsWrapper from "@/src/components/ui/DetailsWrapper";
+import { ActivityFeed, MessageComposer } from "@/src/components/ui/activity";
 import {
-    ProjectAssets,
-    ProjectDescription,
-    ProjectPortalCard,
-    UploadedFiles,
+  ProjectAssets,
+  ProjectDescription,
+  ProjectPortalCard,
+  ProjectTab,
+  ProjectTabBar,
+  UploadedFiles,
 } from "@/src/components/ui/projects";
+import { useAuth } from "@/src/context/AuthContext";
 import { useProjects } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
+import { useActivity } from "@/src/hooks/useActivity";
 import { takePhoto } from "@/src/hooks/useCamera";
 import { useConfirmDialog } from "@/src/hooks/useConfirmDialog";
 import { pickMedia } from "@/src/hooks/useMediaPicker";
@@ -15,15 +20,24 @@ import { deleteProjectFile, sendPortalInvite, uploadProjectFile } from "@/src/se
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useState } from "react";
-import { Alert, Pressable, ScrollView } from "react-native";
+import { Alert, Pressable, ScrollView, Text, View } from "react-native";
 
 export default function ProjectDetailsScreen() {
   const { projectId, name, status } = useLocalSearchParams();
   const { deleteProject, watchProject, watchProjectFiles, project, files } = useProjects();
+  const { user } = useAuth();
   const { theme } = useTheme();
   const router = useRouter();
   const dialog = useConfirmDialog();
   const [inviting, setInviting] = useState(false);
+  const [activeTab, setActiveTab] = useState<ProjectTab>("feed");
+
+  const { events, send, isSending } = useActivity({
+    projectId: projectId as string,
+    visibility: "contractor",
+    authorId: user?.id ?? "",
+    authorName: user?.displayName ?? user?.email ?? "Contractor",
+  });
 
   const handleInviteClient = async () => {
     if (!project?.client_email) {
@@ -134,22 +148,65 @@ export default function ProjectDetailsScreen() {
           </Pressable>
         </DetailsWrapper.HeaderAction>
         <DetailsWrapper.Content>
-          <ScrollView
-            showsVerticalScrollIndicator={false}
-            contentContainerStyle={{ paddingBottom: 32 }}
-          >
-            <ProjectDescription
-              description={project?.description}
-              client_email={project?.client_email}
-            />
-            {project && <ProjectPortalCard project={project} projectId={projectId as string} />}
-            <ProjectAssets onUpload={handleUpload} onCamera={handleCamera} />
-            <UploadedFiles
-              files={files}
-              onFileMenu={handleFileMenu}
-              onFilePress={handleFilePress}
-            />
-          </ScrollView>
+          <ProjectTabBar active={activeTab} onChange={setActiveTab} />
+
+          {/* ── Feed ─────────────────────────────────────────────────────── */}
+          {activeTab === "feed" && (
+            <View style={{ flex: 1 }}>
+              <ActivityFeed events={events} currentUserId={user?.id ?? ""} />
+              <MessageComposer onSend={send} isSending={isSending} showInternalToggle />
+            </View>
+          )}
+
+          {/* ── Files ────────────────────────────────────────────────────── */}
+          {activeTab === "files" && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 32 }}
+            >
+              <ProjectAssets onUpload={handleUpload} onCamera={handleCamera} />
+              <UploadedFiles
+                files={files}
+                onFileMenu={handleFileMenu}
+                onFilePress={handleFilePress}
+              />
+            </ScrollView>
+          )}
+
+          {/* ── Quote ────────────────────────────────────────────────────── */}
+          {activeTab === "quote" && (
+            <View style={{ flex: 1, alignItems: "center", justifyContent: "center", padding: 32 }}>
+              <MaterialCommunityIcons
+                name="file-document-outline"
+                size={48}
+                color={theme.colors.text.secondary}
+              />
+              <Text
+                style={{
+                  color: theme.colors.text.secondary,
+                  fontFamily: theme.typography.fontFamily.regular,
+                  marginTop: 12,
+                  textAlign: "center",
+                }}
+              >
+                Quoting coming soon
+              </Text>
+            </View>
+          )}
+
+          {/* ── Access ───────────────────────────────────────────────────── */}
+          {activeTab === "access" && (
+            <ScrollView
+              showsVerticalScrollIndicator={false}
+              contentContainerStyle={{ paddingBottom: 32, paddingHorizontal: 16 }}
+            >
+              <ProjectDescription
+                description={project?.description}
+                client_email={project?.client_email}
+              />
+              {project && <ProjectPortalCard project={project} projectId={projectId as string} />}
+            </ScrollView>
+          )}
         </DetailsWrapper.Content>
       </DetailsWrapper>
       <ConfirmDialog

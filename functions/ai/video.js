@@ -64,6 +64,25 @@ async function handleVideo(event, projectId, fileId) {
     summary: parsed.summary ?? "",
     analysedAt: admin.firestore.FieldValue.serverTimestamp(),
   });
+
+  // Emit a system event so the activity feed shows the AI result
+  await db
+    .collection("projects")
+    .doc(projectId)
+    .collection("activity")
+    .add({
+      type: "video_analysed",
+      actor: "system",
+      authorId: null,
+      authorName: null,
+      visibleTo: "all",
+      payload: {
+        fileId,
+        categories: parsed.categories ?? [],
+        summary: parsed.summary ?? "",
+      },
+      createdAt: admin.firestore.FieldValue.serverTimestamp(),
+    });
 }
 
 module.exports = { handleVideo };
