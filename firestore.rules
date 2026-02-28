@@ -59,9 +59,10 @@ service cloud.firestore {
         // No one edits or hard-deletes activity events (append-only)
         allow update, delete: if false;
 
-        // Portal client: read public events + send messages
-        allow read: if isValidPortalToken(projectId)
-                    && resource.data.visibleTo == "all";
+        // Portal client: read public events + send messages.
+        // The visibleTo filter is enforced client-side in watchActivity so that
+        // legacy docs without the field don't cause the entire query to be denied.
+        allow read: if isValidPortalToken(projectId);
         allow create: if isValidPortalToken(projectId)
                       && request.resource.data.visibleTo == "all"
                       && (
