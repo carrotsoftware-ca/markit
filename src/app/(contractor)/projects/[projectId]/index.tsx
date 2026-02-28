@@ -143,8 +143,10 @@ export default function ProjectDashboard() {
                 message: `Are you sure you want to delete "${name}"? This cannot be undone.`,
                 confirmLabel: "Delete",
                 onConfirm: async () => {
-                  await deleteProject(projectId);
+                  // Navigate first so the screen unmounts and listeners
+                  // are cleaned up before the deletion snapshot fires.
                   router.replace("/(contractor)/projects");
+                  await deleteProject(projectId);
                 },
               })
             }
