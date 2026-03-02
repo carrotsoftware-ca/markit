@@ -62,6 +62,7 @@ export default function AccessScreen() {
               <ProjectDescription
                 description={project.description}
                 client_email={project.client_email}
+                onSaveEmail={(email) => updateProject(projectId as string, { client_email: email })}
               />
               <ProjectPortalCard project={project} projectId={projectId as string} />
               <View style={styles.section}>
