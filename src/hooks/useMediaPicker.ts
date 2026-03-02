@@ -16,6 +16,7 @@ export interface PickedMedia {
   filename: string;
   mimeType?: string;
   fileSize?: number;
+  exif?: Record<string, any>; // Add exif property
 }
 
 export async function useMediaPicker(): Promise<PickedMedia | null> {
@@ -32,6 +33,7 @@ export async function pickMedia(): Promise<PickedMedia | null> {
     mediaTypes: ["images", "videos"],
     allowsMultipleSelection: false,
     quality: 1,
+    exif: true, // Request EXIF data
   });
 
   if (result.canceled || result.assets.length === 0) return null;
@@ -69,5 +71,6 @@ export async function pickMedia(): Promise<PickedMedia | null> {
     filename: asset.fileName ?? asset.uri.split("/").pop() ?? "upload",
     mimeType: asset.mimeType ?? undefined,
     fileSize,
+    exif: (asset as any).exif, // Include EXIF data in the return object
   };
 }
