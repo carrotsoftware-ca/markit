@@ -43,6 +43,7 @@ export default function FilesScreen() {
       media.fileSize,
       user?.id,
       user?.displayName,
+      media.exif,
     );
   };
 
@@ -57,6 +58,7 @@ export default function FilesScreen() {
       photo.fileSize,
       user?.id,
       user?.displayName,
+      photo.exif,
     );
   };
 

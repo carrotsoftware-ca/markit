@@ -10,6 +10,8 @@ export interface CapturedPhoto {
   width: number;
   /** Displayed height in pixels (EXIF-corrected — use this, not raw Skia image.height()) */
   height: number;
+  /** Raw EXIF metadata — includes FocalLength, FocalLengthIn35mmFilm, Make, Model, etc. */
+  exif?: Record<string, any>;
 }
 
 /**
@@ -31,6 +33,7 @@ export async function takePhoto(): Promise<CapturedPhoto | null> {
     mediaTypes: ["images"],
     quality: 0.9,
     allowsEditing: false,
+    exif: true, // Request EXIF data for focal length correction
   });
 
   if (result.canceled || result.assets.length === 0) return null;
@@ -48,5 +51,6 @@ export async function takePhoto(): Promise<CapturedPhoto | null> {
     // We pass these through so MarkIt can use the correct aspect ratio.
     width: asset.width,
     height: asset.height,
+    exif: (asset as any).exif,
   };
 }

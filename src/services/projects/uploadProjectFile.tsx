@@ -17,6 +17,7 @@ export async function uploadProjectFile(
   fileSize: number | undefined,
   authorId?: string,
   authorName?: string,
+  exif?: Record<string, any>,
 ): Promise<{ fileId: string; url: string }> {
   const fileId = `${Date.now()}_${filename.replace(/[^a-zA-Z0-9._-]/g, "_")}`;
   const storagePath = `projects/${projectId}/${fileId}`;
@@ -42,6 +43,17 @@ export async function uploadProjectFile(
     url: "",
     storagePath,
     ...(mimeType !== undefined && { mimeType }),
+    // Store a trimmed EXIF subset — only the fields useful for measurement correction
+    ...(exif && {
+      exif: {
+        focalLength: exif.FocalLength ?? exif.focalLength,
+        focalLengthIn35mmFilm: exif.FocalLengthIn35mmFilm ?? exif.focalLengthIn35mmFilm,
+        pixelXDimension: exif.PixelXDimension ?? exif.pixelXDimension,
+        pixelYDimension: exif.PixelYDimension ?? exif.pixelYDimension,
+        make: exif.Make ?? exif.make,
+        model: exif.Model ?? exif.model,
+      },
+    }),
   };
   await fileRef.set(optimisticFile);
 
