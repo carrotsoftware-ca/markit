@@ -1,5 +1,6 @@
 import { updateUser } from "@/src/services/user";
 import Constants, { ExecutionEnvironment } from "expo-constants";
+import Device from "expo-device";
 import * as Notifications from "expo-notifications";
 import { useEffect, useRef } from "react";
 import { Platform } from "react-native";
@@ -49,6 +50,10 @@ export function usePushNotifications(userId: string | null | undefined) {
       }
 
       if (finalStatus !== "granted") return;
+
+      // Push tokens are only available on physical devices — simulators and
+      // emulators do not have APNs/FCM registration, so skip silently.
+      if (!Device.isDevice) return;
 
       // On Android a notification channel is required for heads-up alerts.
       if (Platform.OS === "android") {
