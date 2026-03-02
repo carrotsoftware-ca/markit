@@ -1,6 +1,7 @@
 import { useFonts } from "expo-font";
 import { Stack } from "expo-router";
 import * as SplashScreen from "expo-splash-screen";
+import { StatusBar } from "expo-status-bar";
 import { useEffect } from "react";
 import { LogBox, Platform } from "react-native";
 import { GestureHandlerRootView } from "react-native-gesture-handler";
@@ -80,6 +81,7 @@ export default function RootLayout() {
 
   return (
     <ErrorBoundary>
+      <StatusBar style={{ backgroundColor: "#1E1E1E" }} />
       <GestureHandlerRootView style={{ flex: 1 }}>
         <KeyboardProvider>
           <ThemeProvider>
