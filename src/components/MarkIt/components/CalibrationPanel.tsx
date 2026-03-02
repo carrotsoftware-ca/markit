@@ -1,20 +1,16 @@
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import React, { useEffect, useRef, useState } from "react";
 import {
-    Keyboard,
-    Pressable,
-    StyleSheet,
-    Text,
-    TextInput,
-    TouchableOpacity,
-    View,
+  Keyboard,
+  Pressable,
+  StyleSheet,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  View,
 } from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
-import Animated, {
-    useAnimatedStyle,
-    useSharedValue,
-    withTiming,
-} from "react-native-reanimated";
+import Animated, { useAnimatedStyle, useSharedValue, withTiming } from "react-native-reanimated";
 
 import type { CalibrationMode } from "../hooks/useCalibration";
 
@@ -83,10 +79,7 @@ export function CalibrationPanel({
   }, []);
 
   const panelAnimStyle = useAnimatedStyle(() => ({
-    transform: [
-      { translateX: panelX.value },
-      { translateY: panelY.value + kbOffset.value },
-    ],
+    transform: [{ translateX: panelX.value }, { translateY: panelY.value + kbOffset.value }],
   }));
 
   // In measure mode the panel is hidden by default; user shows it via toolbar
@@ -111,17 +104,10 @@ export function CalibrationPanel({
       <View style={styles.calibrateWrapper} pointerEvents="box-none">
         <View style={styles.overlay} pointerEvents="box-none">
           <GestureDetector gesture={dragGesture}>
-            <Animated.View
-              ref={panelRef}
-              style={[styles.panel, panelAnimStyle]}
-            >
+            <Animated.View ref={panelRef} style={[styles.panel, panelAnimStyle]}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>📏 Calibration</Text>
-                <MaterialCommunityIcons
-                  name="drag-variant"
-                  size={22}
-                  color="#666"
-                />
+                <MaterialCommunityIcons name="drag-variant" size={22} color="#666" />
               </View>
               <Text style={styles.subtitle}>
                 Draw a line over a known object, then enter its real size.
@@ -135,15 +121,8 @@ export function CalibrationPanel({
                   value={refInput}
                   onChangeText={onRefInputChange}
                 />
-                <TouchableOpacity
-                  style={styles.dismissKey}
-                  onPress={() => Keyboard.dismiss()}
-                >
-                  <MaterialCommunityIcons
-                    name="keyboard-close"
-                    size={22}
-                    color="#fff"
-                  />
+                <TouchableOpacity style={styles.dismissKey} onPress={() => Keyboard.dismiss()}>
+                  <MaterialCommunityIcons name="keyboard-close" size={22} color="#fff" />
                 </TouchableOpacity>
               </View>
               <TouchableOpacity style={styles.button} onPress={onConfirm}>
@@ -164,17 +143,12 @@ export function CalibrationPanel({
         <View style={styles.scaleBadge} pointerEvents="none">
           <MaterialCommunityIcons name="ruler" size={13} color="#FF8800" />
           <Text style={styles.scaleBadgeText}>
-            {refInput
-              ? `${refInput} in ref`
-              : `${intrinsicScale.toFixed(4)} in/px`}
+            {refInput ? `${refInput} in ref` : `${intrinsicScale.toFixed(4)} in/px`}
           </Text>
         </View>
       )}
       {/* Toolbar icon — top right */}
-      <Pressable
-        style={styles.toolbarIcon}
-        onPress={() => setMeasurePanelVisible((v) => !v)}
-      >
+      <Pressable style={styles.toolbarIcon} onPress={() => setMeasurePanelVisible((v) => !v)}>
         <MaterialCommunityIcons name="tools" size={22} color="#fff" />
       </Pressable>
 
@@ -185,25 +159,21 @@ export function CalibrationPanel({
             <Animated.View style={[styles.panel, panelAnimStyle]}>
               <View style={styles.titleRow}>
                 <Text style={styles.title}>📐 Measuring</Text>
-                <MaterialCommunityIcons
-                  name="drag-variant"
-                  size={22}
-                  color="#666"
-                />
+                <MaterialCommunityIcons name="drag-variant" size={22} color="#666" />
               </View>
               <Text style={styles.subtitle}>
-                {intrinsicScale
-                  ? `${intrinsicScale.toFixed(5)} in/px`
-                  : "No scale set"}
+                {intrinsicScale ? `${intrinsicScale.toFixed(5)} in/px` : "No scale set"}
               </Text>
               {/* Estimated depth from focal length — shown when EXIF is available */}
               {estimatedDepthIn != null && estimatedDepthIn > 0 && (
                 <View style={styles.depthRow}>
                   <MaterialCommunityIcons name="camera-distance" size={13} color="#64b5f6" />
                   <Text style={styles.depthText}>
-                    ~{estimatedDepthIn >= 12
+                    ~
+                    {estimatedDepthIn >= 12
                       ? `${(estimatedDepthIn / 12).toFixed(1)} ft`
-                      : `${estimatedDepthIn.toFixed(1)} in`} from camera
+                      : `${estimatedDepthIn.toFixed(1)} in`}{" "}
+                    from camera
                   </Text>
                 </View>
               )}

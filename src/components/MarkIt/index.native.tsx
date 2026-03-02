@@ -19,9 +19,9 @@ import { useTapToDelete } from "./hooks/useTapToDelete";
 import { useZoom } from "./hooks/useZoom";
 import { normalizedToImageSpace } from "./utils/coordTransform";
 import {
-  estimateDepthFromCalibration,
-  hfovFromFocalLength35mm,
-  parseFocalLengthExif,
+    estimateDepthFromCalibration,
+    hfovFromFocalLength35mm,
+    parseFocalLengthExif,
 } from "./utils/focalLength";
 
 interface MarkItProps {
@@ -219,11 +219,7 @@ export default function MarkIt({ imageUrl, projectId, fileId, exif }: MarkItProp
     // Compute depth on the next tick so scaleAtOne.value has been written
     setTimeout(() => {
       if (hfovDegrees !== null && image) {
-        const depth = estimateDepthFromCalibration(
-          scaleAtOne.value,
-          image.width(),
-          hfovDegrees,
-        );
+        const depth = estimateDepthFromCalibration(scaleAtOne.value, image.width(), hfovDegrees);
         setEstimatedDepthIn(depth);
       }
     }, 0);
