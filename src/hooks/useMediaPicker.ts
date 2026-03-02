@@ -47,11 +47,9 @@ export async function pickMedia(): Promise<PickedMedia | null> {
     asset.uri.toLowerCase().endsWith(".heif");
 
   if (isHeic) {
-    const converted = await ImageManipulator.manipulateAsync(
-      asset.uri,
-      [],
-      { format: ImageManipulator.SaveFormat.PNG },
-    );
+    const converted = await ImageManipulator.manipulateAsync(asset.uri, [], {
+      format: ImageManipulator.SaveFormat.PNG,
+    });
     const originalName = asset.fileName ?? asset.uri.split("/").pop() ?? "upload";
     const pngFilename = originalName.replace(/\.heic$|\.heif$/i, ".png");
     const fileSize = await getFileSize(converted.uri);
