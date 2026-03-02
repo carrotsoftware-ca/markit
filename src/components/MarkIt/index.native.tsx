@@ -18,14 +18,17 @@ import { useMeasurementManager } from "./hooks/useMeasurementManager";
 import { useTapToDelete } from "./hooks/useTapToDelete";
 import { useZoom } from "./hooks/useZoom";
 import { normalizedToImageSpace } from "./utils/coordTransform";
+import { hfovFromFocalLength35mm, parseFocalLengthExif } from "./utils/focalLength";
 
 interface MarkItProps {
   imageUrl?: string;
   projectId?: string;
   fileId?: string;
+  /** Raw EXIF metadata from the image — used for focal-length-based accuracy improvements */
+  exif?: Record<string, any>;
 }
 
-export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
+export default function MarkIt({ imageUrl, projectId, fileId, exif }: MarkItProps) {
   // Use onLayout so we get the actual component dimensions, not the window.
   // On web, useWindowDimensions() returns the browser window size which
   // doesn't match the canvas area — causing calibration to be off.
@@ -42,6 +45,18 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   // 1. Resolve image URI (handles platform differences + Firebase URL encoding)
   const localUri = useMarkItImage(imageUrl);
   const image = useImage(localUri);
+
+  // 1b. Parse focal length from EXIF and compute horizontal field of view.
+  //     This is stored for future depth-aware calibration correction.
+  const { focalLengthIn35mm } = (() => {
+    const { focalLengthIn35mm } = parseFocalLengthExif(exif);
+    return { focalLengthIn35mm };
+  })();
+  const hfovDegrees = hfovFromFocalLength35mm(focalLengthIn35mm ?? undefined);
+  // Log so we can verify EXIF data is flowing through during development
+  if (__DEV__ && hfovDegrees !== null) {
+    console.log(`[MarkIt] focalLength35mm=${focalLengthIn35mm}mm  HFOV=${hfovDegrees.toFixed(1)}°`);
+  }
 
   // 2. Canvas dimensions as shared values so useDerivedValue closures never
   //    capture stale plain-JS numbers — prevents worklet re-registration deadlock.

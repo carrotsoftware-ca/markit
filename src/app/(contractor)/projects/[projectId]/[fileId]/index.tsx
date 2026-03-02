@@ -73,7 +73,13 @@ export default function ProjectFileScreen() {
     if (!file?.url) return;
     router.push({
       pathname: "/(contractor)/projects/measure",
-      params: { fileUrl: file.url, projectId, fileId },
+      params: {
+        fileUrl: file.url,
+        projectId,
+        fileId,
+        // Pass EXIF as a JSON string so the measure screen can forward it to MarkIt
+        exif: file.exif ? JSON.stringify(file.exif) : undefined,
+      },
     });
   };
 
