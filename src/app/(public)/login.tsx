@@ -1,6 +1,7 @@
 import { useAuth } from "@/src/context/AuthContext";
 import { useTheme } from "@/src/context/ThemeContext";
 import { sendPasswordReset } from "@/src/services/auth/email";
+import MarkitLogo from "@/src/components/ui/MarkitLogo";
 import { FontAwesome, MaterialCommunityIcons } from "@expo/vector-icons";
 import { useRouter } from "expo-router";
 import { useState } from "react";
@@ -64,10 +65,13 @@ export default function Login() {
     >
       <ScrollView contentContainerStyle={styles.scroll} keyboardShouldPersistTaps="handled">
         {/* Header */}
+        <View style={styles.logoRow}>
+          <MarkitLogo size={48} />
+        </View>
         <Text
           style={[
             styles.title,
-            { color: "#FFFFFF", fontFamily: t.fontFamily.bold, fontSize: t.fontSize["3xl"] },
+            { color: "#FFFFFF", fontFamily: t.fontFamily.bold, fontSize: t.fontSize["2xl"] },
           ]}
         >
           Welcome Back
@@ -210,6 +214,30 @@ export default function Login() {
             </Text>
           </Pressable>
         </View>
+
+        <View style={styles.privacyRow}>
+          <Pressable onPress={() => router.push("/privacy")}>
+            <Text
+              style={[
+                styles.privacyLink,
+                { color: c.gray[500], fontFamily: t.fontFamily.regular },
+              ]}
+            >
+              Privacy Policy
+            </Text>
+          </Pressable>
+          <Text style={[styles.linkSeparator, { color: c.gray[500] }]}>|</Text>
+          <Pressable onPress={() => router.push("/tos")}>
+            <Text
+              style={[
+                styles.privacyLink,
+                { color: c.gray[500], fontFamily: t.fontFamily.regular },
+              ]}
+            >
+              Terms of Service
+            </Text>
+          </Pressable>
+        </View>
       </ScrollView>
     </KeyboardAvoidingView>
   );
@@ -226,6 +254,10 @@ const styles = StyleSheet.create({
   title: {
     textAlign: "center",
     marginBottom: 8,
+  },
+  logoRow: {
+    alignItems: "center",
+    marginBottom: 16,
   },
   subtitle: {
     textAlign: "center",
@@ -322,5 +354,19 @@ const styles = StyleSheet.create({
   },
   registerLink: {
     fontSize: 13,
+  },
+  privacyRow: {
+    marginTop: 32,
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "center",
+  },
+  privacyLink: {
+    fontSize: 12,
+    textDecorationLine: "underline",
+  },
+  linkSeparator: {
+    fontSize: 12,
+    marginHorizontal: 8,
   },
 });
