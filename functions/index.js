@@ -8,7 +8,7 @@ const {
   disablePortal,
   enablePortal,
   deletePortal,
-} = require("./portal");
+} = require("./src/portal");
 const { analyseProjectFile } = require("./ai");
 
 admin.initializeApp();
