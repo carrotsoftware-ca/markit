@@ -8,9 +8,9 @@ import { usePortalUpload } from "@/src/hooks/usePortalUpload";
 import { getAuth } from "@/src/services/firebase";
 import { deletePortalFile } from "@/src/services/projects/deletePortalFile";
 import {
-  getPortalEvents,
-  getProjectByToken,
-  watchPortalFiles,
+    getPortalEvents,
+    getProjectByToken,
+    watchPortalFiles,
 } from "@/src/services/projects/getPortalProject";
 import { activatePortal, getPortalCustomToken } from "@/src/services/projects/sendPortalInvite";
 import { watchQuote } from "@/src/services/projects/watchQuote";
@@ -18,13 +18,13 @@ import { Project, Quote } from "@/src/types";
 import { useLocalSearchParams, useRouter } from "expo-router";
 import React, { useEffect, useLayoutEffect, useRef, useState } from "react";
 import {
-  ActivityIndicator,
-  Platform,
-  Pressable,
-  ScrollView,
-  StyleSheet,
-  Text,
-  View,
+    ActivityIndicator,
+    Platform,
+    Pressable,
+    ScrollView,
+    StyleSheet,
+    Text,
+    View,
 } from "react-native";
 
 const BG = "#1a1a1a";
@@ -157,7 +157,12 @@ export default function PortalPage() {
     if (!item.file.url) return;
     router.push({
       pathname: "/portal/measure",
-      params: { fileUrl: item.file.url, projectId: project.id, fileId: item.file.id },
+      params: {
+        fileUrl: item.file.url,
+        projectId: project.id,
+        fileId: item.file.id,
+        exif: item.file.exif ? JSON.stringify(item.file.exif) : undefined,
+      },
     });
   };
 

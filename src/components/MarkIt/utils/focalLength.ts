@@ -32,6 +32,60 @@
 const HALF_FRAME_WIDTH_MM = 18;
 
 /**
+ * Known crop factors (35mm-equivalent focal length / physical focal length)
+ * for common Apple devices.
+ *
+ * iPhone main (wide) camera crop factors — used when FocalLengthIn35mmFilm
+ * is missing from EXIF but FocalLength is present.
+ *
+ * Source: Apple sensor specs & DPReview measurements.
+ */
+const APPLE_CROP_FACTORS: Record<string, number> = {
+  // iPhone 12 series — 26mm equiv / 4.2mm physical ≈ 6.19×
+  "iphone 12": 6.19,
+  "iphone 12 mini": 6.19,
+  "iphone 12 pro": 6.19,
+  "iphone 12 pro max": 6.19,
+  // iPhone 13 series — 26mm equiv / 5.1mm physical ≈ 5.1×
+  "iphone 13": 5.1,
+  "iphone 13 mini": 5.1,
+  "iphone 13 pro": 5.77,
+  "iphone 13 pro max": 5.77,
+  // iPhone 14 series
+  "iphone 14": 5.1,
+  "iphone 14 plus": 5.1,
+  "iphone 14 pro": 6.73,
+  "iphone 14 pro max": 6.73,
+  // iPhone 15 series
+  "iphone 15": 5.1,
+  "iphone 15 plus": 5.1,
+  "iphone 15 pro": 6.73,
+  "iphone 15 pro max": 6.73,
+  // iPhone 16 series
+  "iphone 16": 5.1,
+  "iphone 16 plus": 5.1,
+  "iphone 16 pro": 6.73,
+  "iphone 16 pro max": 6.73,
+};
+
+/**
+ * Attempt to derive a 35mm-equivalent focal length from the raw EXIF focal
+ * length and the device model, using a known crop-factor table.
+ *
+ * @returns 35mm-equivalent focal length in mm, or null if unknown device
+ */
+export function focalLength35mmFromModel(
+  focalLengthMm: number,
+  model: string | null | undefined,
+): number | null {
+  if (!model || focalLengthMm <= 0) return null;
+  const key = model.trim().toLowerCase();
+  const cropFactor = APPLE_CROP_FACTORS[key];
+  if (!cropFactor) return null;
+  return focalLengthMm * cropFactor;
+}
+
+/**
  * Compute horizontal field of view in degrees from a 35mm-equivalent focal length.
  *
  * @param focalLengthIn35mm - EXIF FocalLengthIn35mmFilm (mm)
@@ -72,14 +126,18 @@ export function estimateDepthFromCalibration(
 
 /**
  * Convenience: extract and parse EXIF focal length fields from a raw EXIF record.
+ * Returns both the raw focal length and the 35mm equivalent (if present).
+ * Also returns the device model so callers can attempt a crop-factor lookup.
  */
 export function parseFocalLengthExif(exif: Record<string, any> | undefined): {
   focalLength: number | null;
   focalLengthIn35mm: number | null;
+  model: string | null;
 } {
-  if (!exif) return { focalLength: null, focalLengthIn35mm: null };
+  if (!exif) return { focalLength: null, focalLengthIn35mm: null, model: null };
   return {
     focalLength: exif.focalLength ?? exif.FocalLength ?? null,
     focalLengthIn35mm: exif.focalLengthIn35mmFilm ?? exif.FocalLengthIn35mmFilm ?? null,
+    model: exif.model ?? exif.Model ?? null,
   };
 }

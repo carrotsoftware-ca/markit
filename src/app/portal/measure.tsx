@@ -6,17 +6,28 @@ import { Pressable, StyleSheet, View } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function PortalMeasureScreen() {
-  const { fileUrl, projectId, fileId } = useLocalSearchParams<{
+  const { fileUrl, projectId, fileId, exif } = useLocalSearchParams<{
     fileUrl: string;
     projectId: string;
     fileId: string;
+    exif?: string;
   }>();
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
+  const parsedExif = exif
+    ? (() => {
+        try {
+          return JSON.parse(exif);
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
+
   return (
     <View style={styles.container}>
-      <MarkIt imageUrl={fileUrl} projectId={projectId} fileId={fileId} />
+      <MarkIt imageUrl={fileUrl} projectId={projectId} fileId={fileId} exif={parsedExif} />
       <Pressable
         onPress={() => router.back()}
         style={[styles.backButton, { top: insets.top + 12 }]}

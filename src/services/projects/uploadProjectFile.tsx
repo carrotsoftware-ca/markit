@@ -45,20 +45,21 @@ export async function uploadProjectFile(
     ...(mimeType !== undefined && { mimeType }),
     // Store a trimmed EXIF subset — only the fields useful for measurement correction.
     // Use Object.fromEntries to strip undefined values — Firestore rejects them.
-    ...(exif && (() => {
-      const raw = {
-        focalLength: exif.FocalLength ?? exif.focalLength,
-        focalLengthIn35mmFilm: exif.FocalLengthIn35mmFilm ?? exif.focalLengthIn35mmFilm,
-        pixelXDimension: exif.PixelXDimension ?? exif.pixelXDimension,
-        pixelYDimension: exif.PixelYDimension ?? exif.pixelYDimension,
-        make: exif.Make ?? exif.make,
-        model: exif.Model ?? exif.model,
-      };
-      const cleaned = Object.fromEntries(
-        Object.entries(raw).filter(([, v]) => v !== undefined && v !== null),
-      );
-      return Object.keys(cleaned).length > 0 ? { exif: cleaned } : {};
-    })()),
+    ...(exif &&
+      (() => {
+        const raw = {
+          focalLength: exif.FocalLength ?? exif.focalLength,
+          focalLengthIn35mmFilm: exif.FocalLengthIn35mmFilm ?? exif.focalLengthIn35mmFilm,
+          pixelXDimension: exif.PixelXDimension ?? exif.pixelXDimension,
+          pixelYDimension: exif.PixelYDimension ?? exif.pixelYDimension,
+          make: exif.Make ?? exif.make,
+          model: exif.Model ?? exif.model,
+        };
+        const cleaned = Object.fromEntries(
+          Object.entries(raw).filter(([, v]) => v !== undefined && v !== null),
+        );
+        return Object.keys(cleaned).length > 0 ? { exif: cleaned } : {};
+      })()),
   };
   await fileRef.set(optimisticFile);
 

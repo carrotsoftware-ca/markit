@@ -30,6 +30,8 @@ interface CalibrationPanelProps {
    * EXIF + calibration scale. Displayed as a quality indicator after calibration.
    */
   estimatedDepthIn?: number | null;
+  /** Whether EXIF focal length data is available — used to show/hide depth hints */
+  hasDepthData?: boolean;
 }
 
 export function CalibrationPanel({
@@ -43,6 +45,7 @@ export function CalibrationPanel({
   showCalibrationLine,
   onToggleCalibrationLine,
   estimatedDepthIn,
+  hasDepthData,
 }: CalibrationPanelProps) {
   const panelX = useSharedValue(0);
   const panelY = useSharedValue(0);
@@ -110,7 +113,10 @@ export function CalibrationPanel({
                 <MaterialCommunityIcons name="drag-variant" size={22} color="#666" />
               </View>
               <Text style={styles.subtitle}>
-                Draw a line over a known object, then enter its real size.
+                Draw a line over a known object, then enter its real size.{"\n"}
+                <Text style={styles.subtitleHint}>
+                  📍 For best accuracy, calibrate at the same distance as what you plan to measure.
+                </Text>
               </Text>
               <View style={styles.inputRow}>
                 <TextInput
@@ -147,9 +153,27 @@ export function CalibrationPanel({
           </Text>
         </View>
       )}
-      {/* Toolbar icon — top right */}
-      <Pressable style={styles.toolbarIcon} onPress={() => setMeasurePanelVisible((v) => !v)}>
-        <MaterialCommunityIcons name="tools" size={22} color="#fff" />
+      {/* Depth badge — top left below scale badge, always visible when EXIF available */}
+      {estimatedDepthIn != null && estimatedDepthIn > 0 && (
+        <View style={styles.depthBadge} pointerEvents="none">
+          <MaterialCommunityIcons name="camera" size={13} color="#64b5f6" />
+          <Text style={styles.depthBadgeText}>
+            ~
+            {estimatedDepthIn >= 12
+              ? `${(estimatedDepthIn / 12).toFixed(1)} ft`
+              : `${estimatedDepthIn.toFixed(1)} in`}{" "}
+            from camera
+          </Text>
+        </View>
+      )}
+      {/* Toolbar icon — bottom right (above safe area) */}
+      <Pressable
+        style={styles.toolbarIcon}
+        onPress={() => setMeasurePanelVisible((v) => !v)}
+        hitSlop={16}
+      >
+        <MaterialCommunityIcons name="tools" size={24} color="#fff" />
+        <Text style={styles.toolbarLabel}>{measurePanelVisible ? "Close" : "Tools"}</Text>
       </Pressable>
 
       {/* Measure panel */}
@@ -164,12 +188,12 @@ export function CalibrationPanel({
               <Text style={styles.subtitle}>
                 {intrinsicScale ? `${intrinsicScale.toFixed(5)} in/px` : "No scale set"}
               </Text>
-              {/* Estimated depth from focal length — shown when EXIF is available */}
+              {/* Calibration depth + perspective warning */}
               {estimatedDepthIn != null && estimatedDepthIn > 0 && (
                 <View style={styles.depthRow}>
                   <MaterialCommunityIcons name="camera-distance" size={13} color="#64b5f6" />
                   <Text style={styles.depthText}>
-                    ~
+                    Calibrated at ~
                     {estimatedDepthIn >= 12
                       ? `${(estimatedDepthIn / 12).toFixed(1)} ft`
                       : `${estimatedDepthIn.toFixed(1)} in`}{" "}
@@ -177,6 +201,15 @@ export function CalibrationPanel({
                   </Text>
                 </View>
               )}
+              {/* Perspective accuracy warning */}
+              <View style={styles.warningRow}>
+                <MaterialCommunityIcons name="alert-outline" size={13} color="#FFB300" />
+                <Text style={styles.warningText}>
+                  {estimatedDepthIn != null && estimatedDepthIn > 0
+                    ? `Objects closer/farther than ${estimatedDepthIn >= 12 ? `${(estimatedDepthIn / 12).toFixed(1)} ft` : `${estimatedDepthIn.toFixed(1)} in`} will read incorrectly due to perspective.`
+                    : "Measurements are only accurate at the same depth as your calibration object."}
+                </Text>
+              </View>
               {hasCalibrationLine && (
                 <TouchableOpacity
                   style={[styles.button, styles.buttonSecondary]}
@@ -212,20 +245,30 @@ const styles = StyleSheet.create({
   },
   overlay: {
     position: "absolute",
-    bottom: 32,
+    bottom: 100,
     left: 16,
     right: 16,
   },
   toolbarIcon: {
     position: "absolute",
-    top: 56,
+    bottom: 40,
     right: 16,
-    width: 40,
-    height: 40,
+    minWidth: 60,
+    paddingHorizontal: 12,
+    paddingVertical: 8,
     borderRadius: 20,
-    backgroundColor: "rgba(0,0,0,0.55)",
+    backgroundColor: "rgba(0,0,0,0.7)",
     alignItems: "center",
     justifyContent: "center",
+    flexDirection: "row",
+    gap: 6,
+    borderWidth: 1,
+    borderColor: "rgba(255,255,255,0.25)",
+  },
+  toolbarLabel: {
+    color: "#fff",
+    fontSize: 13,
+    fontWeight: "600",
   },
   titleRow: {
     flexDirection: "row",
@@ -246,6 +289,11 @@ const styles = StyleSheet.create({
   subtitle: {
     color: "#ccc",
     fontSize: 14,
+  },
+  subtitleHint: {
+    color: "#aaa",
+    fontSize: 12,
+    fontStyle: "italic",
   },
   inputRow: {
     flexDirection: "row",
@@ -290,5 +338,19 @@ const styles = StyleSheet.create({
   depthText: {
     color: "#64b5f6",
     fontSize: 12,
+  },
+  warningRow: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    gap: 4,
+    backgroundColor: "rgba(255,179,0,0.12)",
+    borderRadius: 6,
+    padding: 6,
+  },
+  warningText: {
+    color: "#FFB300",
+    fontSize: 11,
+    flex: 1,
+    lineHeight: 15,
   },
 });
