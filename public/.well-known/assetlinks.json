@@ -5,7 +5,8 @@
       "namespace": "android_app",
       "package_name": "com.carrotsoftware.markit",
       "sha256_cert_fingerprints": [
-        "1D:30:3E:1D:2B:51:44:E2:2D:CF:97:A3:0E:57:5E:AD:D1:90:9E:8F:C0:AD:BA:E6:52:19:66:90:CE:0B:1D:90"
+        "1D:30:3E:1D:2B:51:44:E2:2D:CF:97:A3:0E:57:5E:AD:D1:90:9E:8F:C0:AD:BA:E6:52:19:66:90:CE:0B:1D:90",
+        "3A:02:54:EC:C9:FD:70:BE:B4:0E:83:C4:A1:1F:68:2B:3D:26:06:33:07:8F:45:CB:C9:C7:A7:81:2F:6A:FA:C2"
       ]
     }
   }
