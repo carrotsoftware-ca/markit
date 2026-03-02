@@ -6,8 +6,7 @@ import { Platform } from "react-native";
 
 // expo-notifications requires a development build — it is not available in Expo Go.
 // Guard every call so the hook silently no-ops in Expo Go and on web.
-const IS_EXPO_GO =
-  Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
+const IS_EXPO_GO = Constants.executionEnvironment === ExecutionEnvironment.StoreClient;
 const SUPPORTED = Platform.OS !== "web" && !IS_EXPO_GO;
 
 /**
