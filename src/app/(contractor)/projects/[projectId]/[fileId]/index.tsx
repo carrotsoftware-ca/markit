@@ -9,13 +9,13 @@ import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useFocusEffect, useLocalSearchParams, useRouter } from "expo-router";
 import React, { useCallback, useEffect, useState } from "react";
 import {
-    ActivityIndicator,
-    Pressable,
-    ScrollView,
-    StyleSheet,
-    Text,
-    TextInput,
-    View,
+  ActivityIndicator,
+  Pressable,
+  ScrollView,
+  StyleSheet,
+  Text,
+  TextInput,
+  View,
 } from "react-native";
 
 export default function ProjectFileScreen() {
@@ -73,7 +73,13 @@ export default function ProjectFileScreen() {
     if (!file?.url) return;
     router.push({
       pathname: "/(contractor)/projects/measure",
-      params: { fileUrl: file.url, projectId, fileId },
+      params: {
+        fileUrl: file.url,
+        projectId,
+        fileId,
+        // Pass EXIF as a JSON string so the measure screen can forward it to MarkIt
+        exif: file.exif ? JSON.stringify(file.exif) : undefined,
+      },
     });
   };
 

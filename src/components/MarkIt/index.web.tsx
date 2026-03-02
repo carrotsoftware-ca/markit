@@ -6,18 +6,15 @@ interface MarkItWebProps {
   imageUrl?: string;
   projectId?: string;
   fileId?: string;
+  exif?: Record<string, any>;
 }
 
-export default function MarkItWeb({
-  imageUrl,
-  projectId,
-  fileId,
-}: MarkItWebProps) {
+export default function MarkItWeb({ imageUrl, projectId, fileId, exif }: MarkItWebProps) {
   return (
     <View style={{ flex: 1 }}>
       <WithSkiaWeb
         getComponent={() => import("./index.native")}
-        componentProps={{ imageUrl, projectId, fileId }}
+        componentProps={{ imageUrl, projectId, fileId, exif }}
         opts={{ locateFile: () => "/canvaskit.wasm" }}
         fallback={
           <View style={styles.loading}>

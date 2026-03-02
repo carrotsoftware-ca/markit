@@ -1,6 +1,13 @@
 import { useImage } from "@shopify/react-native-skia";
 import React, { useEffect, useRef, useState } from "react";
-import { ActivityIndicator, LayoutChangeEvent, StyleSheet, Text, View } from "react-native";
+import {
+    ActivityIndicator,
+    LayoutChangeEvent,
+    PixelRatio,
+    StyleSheet,
+    Text,
+    View,
+} from "react-native";
 import { Gesture, GestureDetector } from "react-native-gesture-handler";
 import { useDerivedValue, useSharedValue } from "react-native-reanimated";
 
@@ -18,14 +25,22 @@ import { useMeasurementManager } from "./hooks/useMeasurementManager";
 import { useTapToDelete } from "./hooks/useTapToDelete";
 import { useZoom } from "./hooks/useZoom";
 import { normalizedToImageSpace } from "./utils/coordTransform";
+import {
+    estimateDepthFromCalibration,
+    focalLength35mmFromModel,
+    hfovFromFocalLength35mm,
+    parseFocalLengthExif,
+} from "./utils/focalLength";
 
 interface MarkItProps {
   imageUrl?: string;
   projectId?: string;
   fileId?: string;
+  /** Raw EXIF metadata from the image — used for focal-length-based accuracy improvements */
+  exif?: Record<string, any>;
 }
 
-export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
+export default function MarkIt({ imageUrl, projectId, fileId, exif }: MarkItProps) {
   // Use onLayout so we get the actual component dimensions, not the window.
   // On web, useWindowDimensions() returns the browser window size which
   // doesn't match the canvas area — causing calibration to be off.
@@ -42,6 +57,26 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   // 1. Resolve image URI (handles platform differences + Firebase URL encoding)
   const localUri = useMarkItImage(imageUrl);
   const image = useImage(localUri);
+
+  // 1b. Parse focal length from EXIF and compute horizontal field of view.
+  //     Falls back to a crop-factor lookup using the device model when
+  //     FocalLengthIn35mmFilm is absent (e.g. iPhone 12 Pro via image picker).
+  const { focalLengthIn35mm, hfovDegrees } = (() => {
+    const { focalLength, focalLengthIn35mm: exifF35, model } = parseFocalLengthExif(exif);
+    // Prefer the EXIF 35mm value; fall back to crop-factor derivation from model
+    const f35 =
+      exifF35 ?? (focalLength != null ? focalLength35mmFromModel(focalLength, model) : null);
+    return {
+      focalLengthIn35mm: f35,
+      hfovDegrees: hfovFromFocalLength35mm(f35 ?? undefined),
+    };
+  })();
+  // Log so we can verify EXIF data is flowing through during development
+  if (__DEV__) {
+    console.log(
+      `[MarkIt] focalLength35mm=${focalLengthIn35mm}mm  HFOV=${hfovDegrees?.toFixed(1) ?? "null"}°  exif=${JSON.stringify(exif)}`,
+    );
+  }
 
   // 2. Canvas dimensions as shared values so useDerivedValue closures never
   //    capture stale plain-JS numbers — prevents worklet re-registration deadlock.
@@ -62,6 +97,12 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
   const lineColor = useSharedValue<string>("orange");
   // True during calibrate mode — keeps the last drawn line visible as a preview
   const isCalibrating = useSharedValue(true);
+  // Mirror of intrinsicScale (JS state) as a shared value so the live-label
+  // worklet can read it on the UI thread without crossing the JS boundary.
+  const intrinsicScaleSV = useSharedValue(0);
+  // Intrinsic image dimensions as shared values for the live-label worklet.
+  const imageIntrinsicWidthSV = useSharedValue(0);
+  const imageIntrinsicHeightSV = useSharedValue(0);
 
   // 4. Zoom + pan + double-tap reset
   const { zoomLevel, translateX, translateY, zoomGesture, doubleTapGesture } = useZoom();
@@ -130,6 +171,7 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     translateX,
     translateY,
     scaleAtOne,
+    intrinsicScale,
     session,
     projectId,
     fileId,
@@ -152,6 +194,20 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
     setPendingDelete,
   });
 
+  // Keep intrinsicScaleSV and image dimension SVs in sync with JS state/image.
+  // Store logical intrinsic dimensions (physical px / PixelRatio) so the units
+  // match intrinsicScale, which is computed as realInches / (physicalPx / PixelRatio).
+  useEffect(() => {
+    intrinsicScaleSV.value = intrinsicScale ?? 0;
+  }, [intrinsicScale]);
+  useEffect(() => {
+    if (image) {
+      const pr = PixelRatio.get();
+      imageIntrinsicWidthSV.value = image.width() / pr;
+      imageIntrinsicHeightSV.value = image.height() / pr;
+    }
+  }, [image]);
+
   // 10. 1-finger draw gesture + live distance label.
   //     In measure mode the live line only shows while the finger is down.
   //     In calibrate mode keepVisible keeps it showing as a preview.
@@ -165,6 +221,11 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
       lastZoom,
       handleLineCommitted,
       keepLineVisible,
+      intrinsicScaleSV,
+      imageIntrinsicWidthSV,
+      imageIntrinsicHeightSV,
+      widthSV,
+      heightSV,
     );
 
   // 11. Calibration confirm handler + session restore effect.
@@ -190,6 +251,28 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
 
   // 12. Show/hide calibration reference line toggle
   const [showCalibrationLine, setShowCalibrationLine] = useState(false);
+
+  // 12b. Estimated camera-to-subject depth — computed after calibration using
+  //      focal length from EXIF. Null when EXIF is unavailable.
+  //      Reacts to intrinsicScale so it works for BOTH fresh calibration and
+  //      sessions restored from Firestore (which bypass handleConfirmCalibration).
+  const [estimatedDepthIn, setEstimatedDepthIn] = useState<number | null>(null);
+
+  useEffect(() => {
+    if (hfovDegrees !== null && image && intrinsicScale && intrinsicScale > 0) {
+      // intrinsicScale is in inches / logical-intrinsic-px (physical px / PixelRatio),
+      // so pass logical width (physical / PixelRatio) to match units.
+      const logicalWidth = image.width() / PixelRatio.get();
+      const depth = estimateDepthFromCalibration(intrinsicScale, logicalWidth, hfovDegrees);
+      setEstimatedDepthIn(depth ?? null);
+    } else {
+      setEstimatedDepthIn(null);
+    }
+  }, [intrinsicScale, hfovDegrees, image]);
+
+  const handleConfirmCalibrationWithDepth = () => {
+    handleConfirmCalibration();
+  };
 
   // 13. Derive committed lines from Firestore events + pending measurement.
   const committedLines = useCommittedLines({
@@ -264,11 +347,13 @@ export default function MarkIt({ imageUrl, projectId, fileId }: MarkItProps) {
         refInput={refInput}
         onRefInputChange={setRefInput}
         intrinsicScale={intrinsicScale}
-        onConfirm={handleConfirmCalibration}
+        onConfirm={handleConfirmCalibrationWithDepth}
         onRecalibrate={recalibrate}
         hasCalibrationLine={!!session.activeCalibrationLine}
         showCalibrationLine={showCalibrationLine}
         onToggleCalibrationLine={() => setShowCalibrationLine((v) => !v)}
+        estimatedDepthIn={estimatedDepthIn}
+        hasDepthData={hfovDegrees !== null}
       />
 
       {pendingMeasurement && (

@@ -17,6 +17,16 @@ export interface ProjectFile {
   // user-editable metadata
   name?: string; // friendly display name — distinct from filename
   notes?: string;
+  // Camera EXIF metadata — stored at upload time for future measurement corrections
+  exif?: {
+    focalLength?: number; // mm — physical focal length of the lens
+    focalLengthIn35mmFilm?: number; // mm — 35mm-equivalent focal length (more useful for FOV calc)
+    pixelXDimension?: number; // sensor width in pixels
+    pixelYDimension?: number; // sensor height in pixels
+    make?: string; // device manufacturer e.g. "Apple"
+    model?: string; // device model e.g. "iPhone 15 Pro"
+    [key: string]: any; // preserve any other EXIF tags for future use
+  };
   // AI analysis fields — video only, written by Cloud Function, never by the client
   aiStatus?: "processing" | "analysed" | "error";
   aiError?: string;

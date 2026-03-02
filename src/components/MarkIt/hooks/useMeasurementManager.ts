@@ -3,10 +3,15 @@ import {
   normalizedToImageSpace,
   screenToNormalized,
 } from "@/src/components/MarkIt/utils/coordTransform";
-import { formatInches, screenPxToInches } from "@/src/components/MarkIt/utils/measureMath";
+import {
+  formatInches,
+  intrinsicPxToInches,
+  normalizedToIntrinsicPx,
+} from "@/src/components/MarkIt/utils/measureMath";
 import { useMarkitSession } from "@/src/hooks/useMarkitSession";
 import { SkImage } from "@shopify/react-native-skia";
 import { useState } from "react";
+import { PixelRatio } from "react-native";
 import { SharedValue } from "react-native-reanimated";
 
 interface MeasurementManagerArgs {
@@ -17,6 +22,8 @@ interface MeasurementManagerArgs {
   translateX: SharedValue<number>;
   translateY: SharedValue<number>;
   scaleAtOne: SharedValue<number>;
+  /** Platform-independent inches/intrinsicPx scale — used for saved labels */
+  intrinsicScale: number | null;
   session: ReturnType<typeof useMarkitSession>;
   projectId?: string;
   fileId?: string;
@@ -30,6 +37,7 @@ export function useMeasurementManager({
   translateX,
   translateY,
   scaleAtOne,
+  intrinsicScale,
   session,
   projectId,
   fileId,
@@ -63,11 +71,31 @@ export function useMeasurementManager({
       translateY.value,
     );
 
-    const dx = sx2 - sx1;
-    const dy = sy2 - sy1;
-    const screenPx = Math.sqrt(dx * dx + dy * dy);
-    const inches = screenPxToInches(screenPx, scaleAtOne.value, zoomLevel.value);
-    const distText = formatInches(inches);
+    // Use intrinsic pixel distance × intrinsicScale for a platform-independent,
+    // zoom-independent measurement. Falls back to screen-pixel path only if
+    // intrinsicScale is not yet available (should not happen in normal use).
+    let distText: string;
+    if (intrinsicScale && intrinsicScale > 0) {
+      // intrinsicScale is in inches / logical-intrinsic-px (physical px / PixelRatio).
+      // Pass logical dimensions so units match.
+      const pr = PixelRatio.get();
+      const intrinsicPx = normalizedToIntrinsicPx(
+        normStart.x,
+        normStart.y,
+        normEnd.x,
+        normEnd.y,
+        image.width() / pr,
+        image.height() / pr,
+      );
+      distText = formatInches(intrinsicPxToInches(intrinsicPx, intrinsicScale));
+    } else {
+      // Fallback (no intrinsicScale yet — guard only, shouldn't reach here)
+      const dx = sx2 - sx1;
+      const dy = sy2 - sy1;
+      const screenPx = Math.sqrt(dx * dx + dy * dy);
+      const inches = (screenPx / zoomLevel.value) * scaleAtOne.value;
+      distText = formatInches(inches);
+    }
 
     const s1 = normalizedToImageSpace(normStart, image, w, h);
     const s2 = normalizedToImageSpace(normEnd, image, w, h);
