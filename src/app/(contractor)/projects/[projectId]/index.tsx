@@ -122,7 +122,7 @@ export default function ProjectDashboard() {
     <>
       <DetailsWrapper>
         <DetailsWrapper.NavAction>
-          <Pressable onPress={() => router.back()}>
+          <Pressable onPress={() => router.navigate("/projects")}>
             <MaterialCommunityIcons name="arrow-left" size={24} color={theme.colors.text.primary} />
           </Pressable>
         </DetailsWrapper.NavAction>
