@@ -15,7 +15,15 @@ export default function MeasureScreen() {
   const router = useRouter();
   const insets = useSafeAreaInsets();
 
-  const parsedExif = exif ? (() => { try { return JSON.parse(exif); } catch { return undefined; } })() : undefined;
+  const parsedExif = exif
+    ? (() => {
+        try {
+          return JSON.parse(exif);
+        } catch {
+          return undefined;
+        }
+      })()
+    : undefined;
 
   return (
     <View style={styles.container}>

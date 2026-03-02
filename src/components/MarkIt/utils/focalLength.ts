@@ -80,7 +80,6 @@ export function parseFocalLengthExif(exif: Record<string, any> | undefined): {
   if (!exif) return { focalLength: null, focalLengthIn35mm: null };
   return {
     focalLength: exif.focalLength ?? exif.FocalLength ?? null,
-    focalLengthIn35mm:
-      exif.focalLengthIn35mmFilm ?? exif.FocalLengthIn35mmFilm ?? null,
+    focalLengthIn35mm: exif.focalLengthIn35mmFilm ?? exif.FocalLengthIn35mmFilm ?? null,
   };
 }

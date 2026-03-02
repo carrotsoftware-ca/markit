@@ -9,12 +9,7 @@ interface MarkItWebProps {
   exif?: Record<string, any>;
 }
 
-export default function MarkItWeb({
-  imageUrl,
-  projectId,
-  fileId,
-  exif,
-}: MarkItWebProps) {
+export default function MarkItWeb({ imageUrl, projectId, fileId, exif }: MarkItWebProps) {
   return (
     <View style={{ flex: 1 }}>
       <WithSkiaWeb
