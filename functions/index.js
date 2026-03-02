@@ -10,6 +10,7 @@ const {
   deletePortal,
 } = require("./src/portal");
 const { analyseProjectFile } = require("./ai");
+const { sendPushNotification } = require("./src/notifications/sendPushNotification");
 
 admin.initializeApp();
 setGlobalOptions({ maxInstances: 10 });
@@ -23,4 +24,5 @@ module.exports = {
   enablePortal,
   deletePortal,
   analyseProjectFile,
+  sendPushNotification,
 };

@@ -2,14 +2,17 @@ import { AppHeader } from "@/src/components/navigation/AppHeader";
 import { useAuth } from "@/src/context/AuthContext";
 import { ProjectsProvider } from "@/src/context/ProjectsContext";
 import { useTheme } from "@/src/context/ThemeContext";
+import { usePushNotifications } from "@/src/hooks/usePushNotifications";
 import { Ionicons } from "@expo/vector-icons";
 import { Redirect, Tabs } from "expo-router";
 import { StatusBar } from "expo-status-bar";
 import { Platform, View } from "react-native";
 
 export default function Layout() {
-  const { isReady, isLoggedIn } = useAuth();
+  const { isReady, isLoggedIn, user } = useAuth();
   const { theme, isDark } = useTheme();
+
+  usePushNotifications(isLoggedIn ? user?.id : null);
 
   if (!isReady) return null;
 

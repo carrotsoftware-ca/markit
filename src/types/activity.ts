@@ -15,7 +15,11 @@ export type ActivityEventType =
   | "quote_sent"
   | "quote_accepted"
   | "quote_rejected"
-  | "quote_revision_requested";
+  | "quote_revision_requested"
+  // Portal-specific system events (actor = "client" or "system")
+  | "portal_opened"
+  | "portal_file_uploaded"
+  | "portal_file_deleted";
 
 interface ActivityEventBase {
   id: string;
@@ -82,6 +86,32 @@ export interface QuoteRevisionRequestedEvent extends ActivityEventBase {
   payload: { version: number; message: string };
 }
 
+export interface PortalOpenedEvent extends ActivityEventBase {
+  type: "portal_opened";
+  payload: {
+    platform: "web" | "ios" | "android";
+    /** true when this is the client's very first visit (status was "draft") */
+    firstVisit: boolean;
+  };
+}
+
+export interface PortalFileUploadedEvent extends ActivityEventBase {
+  type: "portal_file_uploaded";
+  payload: {
+    fileId: string;
+    filename: string;
+    fileType: "image" | "video" | "document";
+  };
+}
+
+export interface PortalFileDeletedEvent extends ActivityEventBase {
+  type: "portal_file_deleted";
+  payload: {
+    fileId: string;
+    filename: string;
+  };
+}
+
 export type ActivityEvent =
   | MessageEvent
   | FileUploadedEvent
@@ -90,4 +120,7 @@ export type ActivityEvent =
   | QuoteSentEvent
   | QuoteAcceptedEvent
   | QuoteRejectedEvent
-  | QuoteRevisionRequestedEvent;
+  | QuoteRevisionRequestedEvent
+  | PortalOpenedEvent
+  | PortalFileUploadedEvent
+  | PortalFileDeletedEvent;

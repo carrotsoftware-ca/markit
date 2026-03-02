@@ -22,6 +22,24 @@ const NOTIFICATION_TYPES = [
     title: "File uploaded",
     subtitle: "Get notified when a file is added to the project",
   },
+  {
+    type: "portal_opened",
+    icon: "eye-outline" as const,
+    title: "Portal opened",
+    subtitle: "Get notified when your client views their portal",
+  },
+  {
+    type: "portal_file_uploaded",
+    icon: "cloud-upload-outline" as const,
+    title: "Client uploaded a file",
+    subtitle: "Get notified when your client adds a file via the portal",
+  },
+  {
+    type: "portal_file_deleted",
+    icon: "trash-can-outline" as const,
+    title: "Client deleted a file",
+    subtitle: "Get notified when your client removes a file via the portal",
+  },
 ] as const;
 
 export default function AccessScreen() {

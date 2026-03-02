@@ -16,7 +16,7 @@ const generatePortalToken = onCall(async (request) => {
   if (!projectId) {
     throw new HttpsError("invalid-argument", "projectId is required.");
   }
-
+  z;
   const db = admin.firestore();
   const projectRef = db.collection("projects").doc(projectId);
   const projectSnap = await projectRef.get();

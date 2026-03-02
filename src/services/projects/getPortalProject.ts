@@ -143,10 +143,10 @@ export async function uploadPortalFile(
   const url = await storageRef.getDownloadURL();
   await fileRef.update({ status: "done", url });
 
-  // Emit a file_uploaded activity event visible to everyone (contractor + portal)
+  // Emit a portal_file_uploaded activity event visible to everyone (contractor + portal)
   await addSystemEvent(
     projectId,
-    "file_uploaded",
+    "portal_file_uploaded",
     { fileId, filename, fileType: inferFileType(mimeType) },
     authorId,
     authorName,

@@ -5,6 +5,8 @@ export interface User {
   photoURL?: string;
   authenticatorType?: string;
   isNew?: boolean;
+  /** Expo push token for this device — written by usePushNotifications on app launch */
+  expoPushToken?: string;
   createdAt?: string;
   updatedAt?: string;
 }

@@ -31,7 +31,8 @@ const activatePortal = onCall(async (request) => {
   const project = snap.docs[0].data();
 
   // Only transition draft → active; don't touch completed projects.
-  if (project.status === "draft") {
+  const firstVisit = project.status === "draft";
+  if (firstVisit) {
     await projectRef.update({ status: "active" });
   }
 
@@ -59,6 +60,18 @@ const activatePortal = onCall(async (request) => {
       });
     }
   }
+
+  // Emit a portal_opened activity event so the contractor's notification
+  // trigger fires for contractors who have opted into portal_opened alerts.
+  await projectRef.collection("activity").add({
+    type: "portal_opened",
+    actor: "client",
+    authorId: request.auth?.uid ?? null,
+    authorName: project.client_email ?? null,
+    visibleTo: "contractor",
+    payload: { platform, firstVisit },
+    createdAt: FieldValue.serverTimestamp(),
+  });
 
   return { success: true };
 });

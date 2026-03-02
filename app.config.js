@@ -121,6 +121,15 @@ export default ({ config }) => ({
       ],
       "expo-router",
       [
+        "expo-notifications",
+        {
+          icon: "./assets/icons/icon.png",
+          color: "#FF6B00",
+          defaultChannel: "default",
+          iosDisplayInForeground: true,
+        },
+      ],
+      [
         "expo-splash-screen",
         {
           image: "./assets/icons/icon.png",

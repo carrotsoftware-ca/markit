@@ -30,7 +30,7 @@ export async function deletePortalFile(
 
   await addSystemEvent(
     projectId,
-    "file_deleted",
+    "portal_file_deleted",
     { fileId: file.id, filename: file.filename },
     authorId,
     authorName,
