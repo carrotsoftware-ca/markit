@@ -14,14 +14,6 @@
       },
       "oauth_client": [
         {
-          "client_id": "784107784111-24uihm61ebe6ed16j62ariupb85kqodg.apps.googleusercontent.com",
-          "client_type": 1,
-          "android_info": {
-            "package_name": "com.carrotsoftware.markit",
-            "certificate_hash": "5e8f16062ea3cd2c4a0d547876baa6f38cabf625"
-          }
-        },
-        {
           "client_id": "784107784111-rmco5du0ctv1b29ur4rcl3kmmddl9b2d.apps.googleusercontent.com",
           "client_type": 1,
           "android_info": {
