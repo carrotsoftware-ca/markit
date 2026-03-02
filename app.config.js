@@ -25,6 +25,9 @@ export default ({ config }) => ({
         "applinks:www.markitquote.com",
       ],
       appleTeamId: "9CTMYS84XH",
+      entitlements: {
+        "aps-environment": "development",
+      },
       infoPlist: {
         ITSAppUsesNonExemptEncryption: false,
         NSPhotoLibraryUsageDescription:

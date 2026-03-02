@@ -60,7 +60,7 @@ exports.sendPushNotification = onDocumentCreated(
     if (!activity) return;
 
     const { projectId } = event.params;
-    const { type, payload = {}, visibleTo } = activity;
+    const { type, payload = {}, visibleTo, authorId } = activity;
 
     // Only notify for contractor-visible events.
     if (visibleTo !== "contractor" && visibleTo !== "all") return;
@@ -77,15 +77,19 @@ exports.sendPushNotification = onDocumentCreated(
     const { ownerId } = projectSnap.data();
     if (!ownerId) return;
 
-    // Fetch the owner's user doc to get their push token + preferences.
+    // Don't notify the contractor about their own actions.
+    if (authorId && authorId === ownerId) return;
+
+    // Check the project's notification preferences before fetching the user.
+    const { notificationTypes = [] } = projectSnap.data();
+    if (!notificationTypes.includes(type)) return;
+
+    // Fetch the owner's user doc to get their push token.
     const userSnap = await db.collection("users").doc(ownerId).get();
     if (!userSnap.exists) return;
 
-    const { expoPushToken, notificationTypes = [] } = userSnap.data();
+    const { expoPushToken } = userSnap.data();
     if (!expoPushToken) return;
-
-    // Check the contractor has opted in to this event type.
-    if (!notificationTypes.includes(type)) return;
 
     // Deliver via Expo Push API.
     const message = {

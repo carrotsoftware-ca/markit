@@ -24,19 +24,19 @@ const NOTIFICATION_TYPES = [
   },
   {
     type: "portal_opened",
-    icon: "eye-outline" as const,
+    icon: "visibility" as const,
     title: "Portal opened",
     subtitle: "Get notified when your client views their portal",
   },
   {
     type: "portal_file_uploaded",
-    icon: "cloud-upload-outline" as const,
+    icon: "cloud-upload" as const,
     title: "Client uploaded a file",
     subtitle: "Get notified when your client adds a file via the portal",
   },
   {
     type: "portal_file_deleted",
-    icon: "trash-can-outline" as const,
+    icon: "delete" as const,
     title: "Client deleted a file",
     subtitle: "Get notified when your client removes a file via the portal",
   },
