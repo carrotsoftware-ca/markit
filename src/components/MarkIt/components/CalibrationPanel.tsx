@@ -29,6 +29,11 @@ interface CalibrationPanelProps {
   hasCalibrationLine?: boolean;
   showCalibrationLine?: boolean;
   onToggleCalibrationLine?: () => void;
+  /**
+   * Estimated camera-to-subject distance in inches, derived from focal length
+   * EXIF + calibration scale. Displayed as a quality indicator after calibration.
+   */
+  estimatedDepthIn?: number | null;
 }
 
 export function CalibrationPanel({
@@ -41,6 +46,7 @@ export function CalibrationPanel({
   hasCalibrationLine,
   showCalibrationLine,
   onToggleCalibrationLine,
+  estimatedDepthIn,
 }: CalibrationPanelProps) {
   const panelX = useSharedValue(0);
   const panelY = useSharedValue(0);
@@ -190,6 +196,17 @@ export function CalibrationPanel({
                   ? `${intrinsicScale.toFixed(5)} in/px`
                   : "No scale set"}
               </Text>
+              {/* Estimated depth from focal length — shown when EXIF is available */}
+              {estimatedDepthIn != null && estimatedDepthIn > 0 && (
+                <View style={styles.depthRow}>
+                  <MaterialCommunityIcons name="camera-distance" size={13} color="#64b5f6" />
+                  <Text style={styles.depthText}>
+                    ~{estimatedDepthIn >= 12
+                      ? `${(estimatedDepthIn / 12).toFixed(1)} ft`
+                      : `${estimatedDepthIn.toFixed(1)} in`} from camera
+                  </Text>
+                </View>
+              )}
               {hasCalibrationLine && (
                 <TouchableOpacity
                   style={[styles.button, styles.buttonSecondary]}
@@ -294,5 +311,14 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontWeight: "bold",
     fontSize: 16,
+  },
+  depthRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 4,
+  },
+  depthText: {
+    color: "#64b5f6",
+    fontSize: 12,
   },
 });

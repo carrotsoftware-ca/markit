@@ -18,7 +18,11 @@ import { useMeasurementManager } from "./hooks/useMeasurementManager";
 import { useTapToDelete } from "./hooks/useTapToDelete";
 import { useZoom } from "./hooks/useZoom";
 import { normalizedToImageSpace } from "./utils/coordTransform";
-import { hfovFromFocalLength35mm, parseFocalLengthExif } from "./utils/focalLength";
+import {
+  estimateDepthFromCalibration,
+  hfovFromFocalLength35mm,
+  parseFocalLengthExif,
+} from "./utils/focalLength";
 
 interface MarkItProps {
   imageUrl?: string;
@@ -206,6 +210,25 @@ export default function MarkIt({ imageUrl, projectId, fileId, exif }: MarkItProp
   // 12. Show/hide calibration reference line toggle
   const [showCalibrationLine, setShowCalibrationLine] = useState(false);
 
+  // 12b. Estimated camera-to-subject depth — computed after calibration using
+  //      focal length from EXIF. Null when EXIF is unavailable.
+  const [estimatedDepthIn, setEstimatedDepthIn] = useState<number | null>(null);
+
+  const handleConfirmCalibrationWithDepth = () => {
+    handleConfirmCalibration();
+    // Compute depth on the next tick so scaleAtOne.value has been written
+    setTimeout(() => {
+      if (hfovDegrees !== null && image) {
+        const depth = estimateDepthFromCalibration(
+          scaleAtOne.value,
+          image.width(),
+          hfovDegrees,
+        );
+        setEstimatedDepthIn(depth);
+      }
+    }, 0);
+  };
+
   // 13. Derive committed lines from Firestore events + pending measurement.
   const committedLines = useCommittedLines({
     session,
@@ -279,11 +302,12 @@ export default function MarkIt({ imageUrl, projectId, fileId, exif }: MarkItProp
         refInput={refInput}
         onRefInputChange={setRefInput}
         intrinsicScale={intrinsicScale}
-        onConfirm={handleConfirmCalibration}
+        onConfirm={handleConfirmCalibrationWithDepth}
         onRecalibrate={recalibrate}
         hasCalibrationLine={!!session.activeCalibrationLine}
         showCalibrationLine={showCalibrationLine}
         onToggleCalibrationLine={() => setShowCalibrationLine((v) => !v)}
+        estimatedDepthIn={estimatedDepthIn}
       />
 
       {pendingMeasurement && (
