@@ -191,7 +191,7 @@ export function CalibrationPanel({
               {/* Calibration depth + perspective warning */}
               {estimatedDepthIn != null && estimatedDepthIn > 0 && (
                 <View style={styles.depthRow}>
-                  <MaterialCommunityIcons name="camera-distance" size={13} color="#64b5f6" />
+                  <MaterialCommunityIcons name="camera-marker" size={13} color="#64b5f6" />
                   <Text style={styles.depthText}>
                     Calibrated at ~
                     {estimatedDepthIn >= 12
